@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { usePlannerStore } from '../store/plannerStore'
 import { TaskBlock } from './TaskBlock'
 import { HOUR_HEIGHT, SNAP_HOURS, TOTAL_HOURS } from '../lib/constants'
 import { todayKey } from '../lib/date'
+import { layoutTasks } from '../lib/layout'
 import type { DateKey, DayRange, Task } from '../types'
 
 interface CalendarColumnProps {
@@ -11,6 +12,7 @@ interface CalendarColumnProps {
   tasks: Task[]
   selectedTaskId: string | null
   onSelectTask: (task: Task) => void
+  onTaskMoved?: (task: Task, newDate: DateKey, newStart: number) => void
 }
 
 interface Selection {
@@ -27,12 +29,16 @@ function snapHour(hour: number): number {
 }
 
 /** A single day's hour-by-hour column: renders tasks and supports click-drag task creation. */
-export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTask }: CalendarColumnProps) {
+export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTask, onTaskMoved }: CalendarColumnProps) {
   const addTask = usePlannerStore((state) => state.addTask)
+  const dragPreview = usePlannerStore((state) => state.dragPreview)
   const columnRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [draft, setDraft] = useState<{ start: number; duration: number } | null>(null)
   const [draftValue, setDraftValue] = useState('')
+
+  const layout = useMemo(() => layoutTasks(tasks), [tasks])
+  const incomingPreview = dragPreview && dragPreview.date === date ? dragPreview : null
 
   function hourFromClientY(clientY: number): number {
     const rect = columnRef.current!.getBoundingClientRect()
@@ -86,6 +92,7 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
   return (
     <div
       ref={columnRef}
+      data-date-column={date}
       onMouseDown={handleMouseDown}
       className="relative flex-1 select-none"
       style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
@@ -119,6 +126,13 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
         />
       )}
 
+      {incomingPreview && (
+        <div
+          className="pointer-events-none absolute inset-x-1 z-20 rounded-lg border-2 border-dashed border-sky-400 bg-sky-200/30 dark:border-sky-500 dark:bg-sky-500/20"
+          style={{ top: incomingPreview.start * HOUR_HEIGHT, height: incomingPreview.duration * HOUR_HEIGHT }}
+        />
+      )}
+
       {draft && (
         <form
           onSubmit={(event) => {
@@ -142,9 +156,20 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
         </form>
       )}
 
-      {tasks.map((task) => (
-        <TaskBlock key={task.id} task={task} selected={task.id === selectedTaskId} onSelect={onSelectTask} />
-      ))}
+      {tasks.map((task) => {
+        const taskLayout = layout.get(task.id) ?? { left: 0, width: 100 }
+        return (
+          <TaskBlock
+            key={task.id}
+            task={task}
+            selected={task.id === selectedTaskId}
+            onSelect={onSelectTask}
+            onMoved={onTaskMoved}
+            left={taskLayout.left}
+            width={taskLayout.width}
+          />
+        )
+      })}
     </div>
   )
 }
