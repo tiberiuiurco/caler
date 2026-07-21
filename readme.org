@@ -12,7 +12,8 @@ host).
 - Plan the day by hour, 0-24, side by side with yesterday for context.
 - On first open, pick today's active hours (e.g. ~5-21~), then rapid-fire
   entries as ~DURATION TEXT~ (e.g. ~1.5 Write report~) to fill the day without
-  touching the mouse.
+  touching the mouse. Enter just a ~DURATION~ with no text (e.g. ~1~) to skip
+  that stretch of time instead of creating a task.
 - Click a task to select it and edit title, description, start/end time in a
   side panel; drag a task's bottom edge to resize it; click-drag empty
   calendar space to create a new task there.
@@ -86,7 +87,7 @@ src/
 ├── lib/                   Framework-free helpers, all unit-testable in isolation
 │   ├── constants.ts       Grid sizing, snap increment, storage key
 │   ├── date.ts            Date-key <-> Date conversions, formatting, week math
-│   ├── parseEntry.ts      Parses "DURATION TEXT" quick-add syntax
+│   ├── parseEntry.ts      Parses "DURATION TEXT" quick-add syntax (bare DURATION = skip)
 │   ├── exportData.ts      Serializes the store to a downloadable JSON file
 │   └── id.ts              UUID generation for new tasks
 ├── hooks/
@@ -95,7 +96,7 @@ src/
 ├── components/
 │   ├── Header.tsx          View switcher, week navigation, export, theme toggle
 │   ├── RangeModal.tsx       First-open prompt for today's active hour range
-│   ├── QuickAddBar.tsx      Sequential "DURATION TEXT" entry, auto-refocusing
+│   ├── QuickAddBar.tsx      Sequential "DURATION TEXT" entry, auto-refocusing (bare DURATION skips)
 │   ├── CalendarGrid.tsx     Shared hour-ruler + column layout (day or week)
 │   ├── CalendarColumn.tsx   One day's column: grid lines, drag-to-create, tasks
 │   ├── TaskBlock.tsx        A single task: resize handle, delete-on-dbl-right-click

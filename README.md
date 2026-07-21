@@ -18,7 +18,9 @@ Single-user, no login, no backend — every plan lives in your browser's
 2. Once set, a quick-add bar appears at the top, auto-focused. Type entries as
    `DURATION TEXT` (e.g. `1.5 Write report`) and press Enter — it keeps
    re-focusing itself so you can plan the whole day without touching the mouse.
-   Click away to pause it; a "Continue adding tasks" button brings it back.
+   Enter just a `DURATION` with no text (e.g. `1`) to skip that stretch of
+   time instead of creating a task. Click away to pause it; a "Continue adding
+   tasks" button brings it back.
 3. The calendar shows yesterday on the left (read history) and today on the
    right, hour rows from 00:00–24:00. Click a task to edit its title/description
    in the right-hand sidebar. Drag the bottom edge of a task to resize it.

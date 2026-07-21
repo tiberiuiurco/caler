@@ -141,7 +141,8 @@ export default function App() {
   function handleQuickAddSubmit(duration: number, title: string) {
     if (!todayRange) return
     const cursor = quickAddCursor[today] ?? todayRange.start
-    addTask(today, cursor, duration, title)
+    // A bare duration with no title just skips that stretch of time, no task is created.
+    if (title.trim() !== '') addTask(today, cursor, duration, title)
     const next = cursor + duration
     setQuickAddCursor(today, next)
     setQuickAddValue('')
