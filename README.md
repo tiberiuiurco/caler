@@ -31,7 +31,12 @@ Single-user, no login, no backend — every plan lives in your browser's
    or **Day** to return. Click any date's header in Week view to plan it the
    same way as today — it prompts for that day's active hours if it doesn't
    have any yet, then drops you into the same sequential quick-add flow.
-6. **Export** in the header downloads all ranges/tasks as a JSON file.
+6. Press `j` to jump the day view straight to any date: type it as `MM/DD`
+   (the year rolls over automatically — entering an already-passed date jumps
+   to next year's occurrence instead of the past) and it shows `Today | that
+   date`, prompting for its active hours and dropping into quick-add just like
+   any other day.
+7. **Export** in the header downloads all ranges/tasks as a JSON file.
 
 ## Keyboard shortcuts
 
@@ -40,7 +45,8 @@ Single-user, no login, no backend — every plan lives in your browser's
 | `↑` / `↓` | Loop through the day's tasks (wraps at either end). Works even while typing in the quick-add bar — if you've typed something unsaved, you'll be asked before it's discarded. |
 | `w` / `s` | Same as `↑` / `↓` (only outside text fields). |
 | `←` / `→` or `a` / `d` | Page one day back/forward in Day view, or one week back/forward in Week view. |
-| `.` | Jump the week view back to the current week. |
+| `.` | Jump back to today (Day view) or the current week (Week view). |
+| `j` | Prompt for a `MM/DD` date and jump the day view straight to it, paired with today. |
 | `q` | Switch to Week view (resets quick-add planning back to today). |
 | `e` | Switch to Day view (resets quick-add planning back to today). |
 | `i` | Activate the quick-add bar for whichever date is currently being planned (same as "+Continue"). |

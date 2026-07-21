@@ -11,7 +11,9 @@ host).
 
 - Plan the day by hour, 0-24, side by side with the previous day for context.
   Page the focused day forward/backward with ~←~/~→~ or ~a~/~d~; beyond
-  yesterday/today/tomorrow the column header just shows the date.
+  yesterday/today/tomorrow the column header just shows the date. Press ~j~
+  to jump straight to any ~MM/DD~ date instead (rolling into next year if
+  that date already passed this year), paired with today.
 - On first open, pick today's active hours (e.g. ~5-21~), then rapid-fire
   entries as ~DURATION TEXT~ (e.g. ~1.5 Write report~) to fill the day without
   touching the mouse. Enter just a ~DURATION~ with no text (e.g. ~1~) to skip
@@ -71,7 +73,8 @@ publishes ~dist/~ to GitHub Pages on every push to ~main~ (enable Pages →
 |---------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
 | ~↑~ / ~↓~ (or ~w~ / ~s~)  | Loop through the day's tasks, wrapping at either end. The arrow keys work even while typing in the quick-add bar — if there's unsaved text, you'll be asked before it's discarded. |
 | ~←~ / ~→~ (or ~a~ / ~d~)  | Page one day back/forward in Day view, or one week back/forward in Week view                                                                      |
-| ~.~                       | Jump the week view back to the current week                                                                                                       |
+| ~.~                       | Jump back to today (Day view) or the current week (Week view)                                                                                     |
+| ~j~                       | Prompt for a ~MM/DD~ date and jump the day view straight to it, paired with today                                                                 |
 | ~q~                       | Switch to Week view (resets quick-add planning back to today)                                                                                     |
 | ~e~                       | Switch to Day view (resets quick-add planning back to today)                                                                                      |
 | ~i~                       | Activate the quick-add bar for whichever date is currently being planned (same as "+Continue")                                                    |
@@ -102,6 +105,7 @@ src/
 ├── components/
 │   ├── Header.tsx          View switcher, week navigation, export, theme toggle
 │   ├── RangeModal.tsx       First-open prompt for today's active hour range
+│   ├── JumpToDateModal.tsx  "j" prompt: parses "MM/DD" into a full date
 │   ├── QuickAddBar.tsx      Sequential "DURATION TEXT" entry, auto-refocusing (bare DURATION skips)
 │   ├── CalendarGrid.tsx     Shared hour-ruler + column layout (day or week)
 │   ├── CalendarColumn.tsx   One day's column: grid lines, drag-to-create, tasks

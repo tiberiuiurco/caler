@@ -1,4 +1,4 @@
-import { addDays, format, startOfWeek } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, startOfWeek } from 'date-fns'
 import type { DateKey } from '../types'
 
 const KEY_FORMAT = 'yyyy-MM-dd'
@@ -18,6 +18,29 @@ export function todayKey(): DateKey {
 
 export function shiftKey(key: DateKey, days: number): DateKey {
   return toKey(addDays(keyToDate(key), days))
+}
+
+/** Whole calendar days between `fromKey` and `key` (positive when `key` is later). */
+export function daysFromKey(key: DateKey, fromKey: DateKey): number {
+  return differenceInCalendarDays(keyToDate(key), keyToDate(fromKey))
+}
+
+/**
+ * Resolves a bare "month/day" into a full date key, anchored to `fromKey`'s year unless that
+ * date already fell before `fromKey` — in which case it rolls over into the next year, so typing
+ * an already-passed month/day (e.g. in December) jumps forward instead of into the past.
+ * Returns null when the day doesn't exist in that month (e.g. Feb 30, or Feb 29 outside a leap year).
+ */
+export function resolveMonthDay(month: number, day: number, fromKey: DateKey): DateKey | null {
+  const from = keyToDate(fromKey)
+  let year = from.getFullYear()
+  let candidate = new Date(year, month - 1, day)
+  if (candidate < from) {
+    year += 1
+    candidate = new Date(year, month - 1, day)
+  }
+  if (candidate.getMonth() !== month - 1 || candidate.getDate() !== day) return null
+  return toKey(candidate)
 }
 
 /** Returns the 7 date keys for the Monday-started week containing `key`. */
