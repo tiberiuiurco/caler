@@ -46,6 +46,17 @@ export function formatDayLabel(key: DateKey): string {
   return format(keyToDate(key), 'EEEE, MMM d')
 }
 
+const RELATIVE_DAY_LABELS: Record<number, string> = { [-1]: 'Yesterday', 0: 'Today', 1: 'Tomorrow' }
+
+/**
+ * Day-column heading for a date `offset` days from the view's anchor: "Yesterday"/"Today"/"Tomorrow"
+ * (with the full date as a sublabel) right around the anchor, otherwise just the date itself.
+ */
+export function dayColumnLabel(offset: number, key: DateKey): { label: string; sublabel?: string } {
+  const relative = RELATIVE_DAY_LABELS[offset]
+  return relative ? { label: relative, sublabel: formatDayLabel(key) } : { label: formatDayLabel(key) }
+}
+
 export function formatWeekdayShort(key: DateKey): string {
   return format(keyToDate(key), 'EEE d')
 }
