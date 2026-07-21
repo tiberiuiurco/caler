@@ -19,12 +19,14 @@ interface CalendarGridProps {
   planningDate?: DateKey | null
   /** When provided, clicking a column's header drops that date into the quick-add planning flow. */
   onSelectPlanningDate?: (date: DateKey) => void
+  /** Notified after a task is dragged to a new time (and/or day), so callers can keep selection in sync. */
+  onTaskMoved?: (task: Task, newDate: DateKey, newStart: number) => void
 }
 
 const GUTTER_WIDTH = 56
 
 /** Shared hour-by-hour grid (0-24) used by both the day view and the week view. */
-export function CalendarGrid({ columns, selectedTaskId, onSelectTask, planningDate, onSelectPlanningDate }: CalendarGridProps) {
+export function CalendarGrid({ columns, selectedTaskId, onSelectTask, planningDate, onSelectPlanningDate, onTaskMoved }: CalendarGridProps) {
   return (
     <div className="flex-1 overflow-y-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
       <div className="flex border-b border-neutral-200 bg-white/90 backdrop-blur sticky top-0 z-20 dark:border-neutral-800 dark:bg-neutral-950/90">
@@ -71,6 +73,7 @@ export function CalendarGrid({ columns, selectedTaskId, onSelectTask, planningDa
               tasks={column.tasks}
               selectedTaskId={selectedTaskId}
               onSelectTask={onSelectTask}
+              onTaskMoved={onTaskMoved}
             />
           </div>
         ))}

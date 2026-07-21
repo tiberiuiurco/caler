@@ -21,6 +21,14 @@ export interface DayRange {
 
 export type Theme = 'light' | 'dark'
 
+/** Live preview of an in-progress drag, shared through the store so any day column can render it. */
+export interface DragPreview {
+  taskId: string
+  date: DateKey
+  start: number
+  duration: number
+}
+
 export interface QuickAddState {
   active: boolean
   /** Hour cursor where the next quick-added task will begin. */

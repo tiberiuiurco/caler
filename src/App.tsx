@@ -92,6 +92,11 @@ export default function App() {
 
   // Clicking a date's header in week view enables the same sequential quick-add flow day view
   // gives today: prompting for an hour range first if that date doesn't have one yet.
+  // Keeps the sidebar/selection pointed at a task after it's dragged to a different day.
+  function handleTaskMoved(task: Task, newDate: DateKey) {
+    setSelected((current) => (current && current.id === task.id ? { id: task.id, date: newDate } : current))
+  }
+
   function handleSelectPlanningDate(date: DateKey) {
     setQuickAddDate(date)
     setQuickAddValue('')
@@ -347,6 +352,7 @@ export default function App() {
           onSelectTask={(task) => setSelected({ id: task.id, date: task.date })}
           planningDate={viewMode === 'week' ? quickAddDate : null}
           onSelectPlanningDate={viewMode === 'week' ? handleSelectPlanningDate : undefined}
+          onTaskMoved={handleTaskMoved}
         />
         {selectedTask && <TaskSidebar task={selectedTask} onClose={() => setSelected(null)} />}
       </div>
