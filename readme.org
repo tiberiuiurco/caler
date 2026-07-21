@@ -1,0 +1,11 @@
+I want to build a very fast, simple daily planner that implements the time blocking philosophy.
+- web front end app, that can be statically exported and uploaded to github pages to use (everything should be stored in the browser's data)
+- data can be exported (which will export it in a json format)
+
+* General Idea
+The user (no login, single user) opens the app, and when opened, it has on the left side of the screen the day before (if no data, it should be empty), and in the right side, the current day, which will be empty. If current day is empty, in the middle of the screen, there is a popup asking for a range of hours (ex: 5-21), which will determine the current day's active time. The range should be only between 0-24. After that, the program will ask the user on a small popup field at the top (allowing to see the current state of the calendar), for entries to populate the calendar with.
+- the input is of form "DURATION TEXT", where duration is a number like 1, 1.5, 0.5 etc. After the user presses enter, it will populate the calendar with it and ask for the next one, doing this until it populates the whole calendar (reaching the end of the active range for the day) or if the user clicks outside (if the user clicks outside, the sequential input hides and instead appears a button that will enable that mode if needed (which will add continuing to the last task)
+- the calendar view should be on a row grid, hour by hour, from 0 to 24, vertically. The user can click on a task, which will trigger a sidebar on the right side, allowing to edit the task (title, description)
+- the user is able to drag the bottom of the task ui to easily modify the duration of the task
+- the user is also able to click and drag on the calendar to add new tasks with the mouse, which will trigger a field on the selected region to input "DURATION TEXT"
+- the ui should have a button at the top with "week", which will trigger a week view (starting from monday), and which has arrows to go back in time or in the future
