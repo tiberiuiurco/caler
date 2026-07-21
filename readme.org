@@ -1,11 +1,114 @@
-I want to build a very fast, simple daily planner that implements the time blocking philosophy.
-- web front end app, that can be statically exported and uploaded to github pages to use (everything should be stored in the browser's data)
-- data can be exported (which will export it in a json format)
+#+TITLE: Caler
+#+OPTIONS: toc:2 num:nil
 
-* General Idea
-The user (no login, single user) opens the app, and when opened, it has on the left side of the screen the day before (if no data, it should be empty), and in the right side, the current day, which will be empty. If current day is empty, in the middle of the screen, there is a popup asking for a range of hours (ex: 5-21), which will determine the current day's active time. The range should be only between 0-24. After that, the program will ask the user on a small popup field at the top (allowing to see the current state of the calendar), for entries to populate the calendar with.
-- the input is of form "DURATION TEXT", where duration is a number like 1, 1.5, 0.5 etc. After the user presses enter, it will populate the calendar with it and ask for the next one, doing this until it populates the whole calendar (reaching the end of the active range for the day) or if the user clicks outside (if the user clicks outside, the sequential input hides and instead appears a button that will enable that mode if needed (which will add continuing to the last task)
-- the calendar view should be on a row grid, hour by hour, from 0 to 24, vertically. The user can click on a task, which will trigger a sidebar on the right side, allowing to edit the task (title, description)
-- the user is able to drag the bottom of the task ui to easily modify the duration of the task
-- the user is also able to click and drag on the calendar to add new tasks with the mouse, which will trigger a field on the selected region to input "DURATION TEXT"
-- the ui should have a button at the top with "week", which will trigger a week view (starting from monday), and which has arrows to go back in time or in the future
+A very fast, minimalist daily planner built around the *time-blocking*
+philosophy. Single-user, no login, no backend — everything lives in your
+browser's ~localStorage~ and can be exported to JSON at any time. Ships as a
+static site, so it can be dropped straight onto GitHub Pages (or any static
+host).
+
+* Features
+
+- Plan the day by hour, 0-24, side by side with yesterday for context.
+- On first open, pick today's active hours (e.g. ~5-21~), then rapid-fire
+  entries as ~DURATION TEXT~ (e.g. ~1.5 Write report~) to fill the day without
+  touching the mouse.
+- Click a task to select it and edit title, description, start/end time in a
+  side panel; drag a task's bottom edge to resize it; click-drag empty
+  calendar space to create a new task there.
+- Delete a task by double-right-clicking it, or by selecting it and pressing
+  ~x~ (with a confirmation prompt).
+- Week view (Monday-start) with keyboard/arrow navigation between weeks.
+- Light/dark theme, toggleable and persisted.
+- Export all data as a JSON file.
+- A keyboard-first flow throughout — see [[#keyboard-shortcuts][Keyboard shortcuts]].
+
+* Getting started
+
+** Prerequisites
+
+- [[https://nodejs.org][Node.js]] 20+
+- [[https://pnpm.io][pnpm]] (install with ~corepack enable~ or ~npm i -g pnpm~)
+
+** Install and run
+
+#+begin_src sh
+pnpm install
+pnpm dev
+#+end_src
+
+Then open the printed local URL (e.g. http://localhost:5173) in your browser.
+
+** Other commands
+
+| Command        | Purpose                                           |
+|----------------+----------------------------------------------------|
+| ~pnpm dev~     | Start the local dev server with hot reload        |
+| ~pnpm build~   | Type-check and build the static site into ~dist/~ |
+| ~pnpm preview~ | Serve the production build locally                |
+| ~pnpm lint~    | Run oxlint over the codebase                      |
+
+** Deploying to GitHub Pages
+
+~vite.config.ts~ sets ~base: './'~, so the ~dist/~ output is fully relocatable
+— it works unmodified on GitHub Pages, any sub-path, or even opened directly
+from disk. A ready-made workflow at ~.github/workflows/deploy.yml~ builds and
+publishes ~dist/~ to GitHub Pages on every push to ~main~ (enable Pages →
+"GitHub Actions" as the source once, in the repo settings).
+
+* Keyboard shortcuts
+:PROPERTIES:
+:CUSTOM_ID: keyboard-shortcuts
+:END:
+
+| Key                      | Action                                                                                                                                              |
+|---------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
+| ~↑~ / ~↓~ (or ~w~ / ~s~)  | Loop through the day's tasks, wrapping at either end. The arrow keys work even while typing in the quick-add bar — if there's unsaved text, you'll be asked before it's discarded. |
+| ~←~ / ~→~ (or ~a~ / ~d~)  | Page the week view back/forward one week                                                                                                          |
+| ~.~                       | Jump the week view back to the current week                                                                                                       |
+| ~q~                       | Switch to Week view                                                                                                                               |
+| ~e~                       | Switch to Day view                                                                                                                                 |
+| ~x~                       | Delete the selected task (asks for confirmation)                                                                                                  |
+| double-right-click        | Delete a task instantly, no confirmation                                                                                                           |
+| ~t~                       | Toggle light/dark theme                                                                                                                            |
+| ~Escape~                  | Close the sidebar, or cancel whichever dialog is open                                                                                             |
+| ~Enter~                   | Confirm the range/quick-add form, or the focused dialog's default action                                                                          |
+
+* Project structure
+
+#+begin_src text
+src/
+├── main.tsx              Entry point; mounts <App/> and loads global.css
+├── App.tsx               Top-level state: view mode, selection, keyboard flow
+├── types/index.ts         Shared domain types: Task, DayRange, Theme, ...
+├── store/
+│   └── plannerStore.ts    Zustand store (ranges + tasks), persisted to localStorage
+├── lib/                   Framework-free helpers, all unit-testable in isolation
+│   ├── constants.ts       Grid sizing, snap increment, storage key
+│   ├── date.ts            Date-key <-> Date conversions, formatting, week math
+│   ├── parseEntry.ts      Parses "DURATION TEXT" quick-add syntax
+│   ├── exportData.ts      Serializes the store to a downloadable JSON file
+│   └── id.ts              UUID generation for new tasks
+├── hooks/
+│   ├── useTheme.ts             Syncs the store's theme with the <html> class
+│   └── useDoubleRightClick.ts  Detects two right-clicks within a short window
+├── components/
+│   ├── Header.tsx          View switcher, week navigation, export, theme toggle
+│   ├── RangeModal.tsx       First-open prompt for today's active hour range
+│   ├── QuickAddBar.tsx      Sequential "DURATION TEXT" entry, auto-refocusing
+│   ├── CalendarGrid.tsx     Shared hour-ruler + column layout (day or week)
+│   ├── CalendarColumn.tsx   One day's column: grid lines, drag-to-create, tasks
+│   ├── TaskBlock.tsx        A single task: resize handle, delete-on-dbl-right-click
+│   ├── TaskSidebar.tsx      Edit title/description/start/end for the selected task
+│   ├── ConfirmDialog.tsx    Generic Enter/Escape confirmation modal
+│   └── ThemeToggle.tsx      Light/dark switch
+└── styles/global.css      Tailwind entry point + base theme
+#+end_src
+
+* Stack
+
+- [[https://vite.dev][Vite]] + React 19 + TypeScript
+- [[https://tailwindcss.com][Tailwind CSS v4]] for styling (dark mode via a toggled ~dark~ class)
+- [[https://github.com/pmndrs/zustand][Zustand]] with the ~persist~ middleware for local, durable state
+- [[https://date-fns.org][date-fns]] for date math
+- [[https://oxc.rs/docs/guide/usage/linter][oxlint]] for linting
