@@ -21,8 +21,9 @@ Single-user, no login, no backend — every plan lives in your browser's
    Enter just a `DURATION` with no text (e.g. `1`) to skip that stretch of
    time instead of creating a task. Click away to pause it; a "Continue adding
    tasks" button brings it back.
-3. The calendar shows yesterday on the left (read history) and today on the
-   right, hour rows from 00:00–24:00. Click a task to edit its title/description
+3. The calendar shows the previous day on the left (read history) and the focused day on the
+   right — today by default, paged with `←`/`→` or `a`/`d` — hour rows from 00:00–24:00. Beyond
+   yesterday/today/tomorrow, the column headers just show the date. Click a task to edit its title/description
    in the right-hand sidebar. Drag the bottom edge of a task to resize it.
    Click and drag on empty calendar space to create a new task in that slot.
 4. **Double right-click** a task to delete it instantly.
@@ -38,7 +39,7 @@ Single-user, no login, no backend — every plan lives in your browser's
 | --- | --- |
 | `↑` / `↓` | Loop through the day's tasks (wraps at either end). Works even while typing in the quick-add bar — if you've typed something unsaved, you'll be asked before it's discarded. |
 | `w` / `s` | Same as `↑` / `↓` (only outside text fields). |
-| `←` / `→` or `a` / `d` | Page the week view back/forward one week. |
+| `←` / `→` or `a` / `d` | Page one day back/forward in Day view, or one week back/forward in Week view. |
 | `.` | Jump the week view back to the current week. |
 | `q` | Switch to Week view (resets quick-add planning back to today). |
 | `e` | Switch to Day view (resets quick-add planning back to today). |

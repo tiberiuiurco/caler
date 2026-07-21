@@ -8,7 +8,7 @@ import { CalendarGrid, type CalendarColumnData } from './components/CalendarGrid
 import { usePlannerStore } from './store/plannerStore'
 import { useTheme } from './hooks/useTheme'
 import { exportPlannerData } from './lib/exportData'
-import { formatDayLabel, formatWeekdayShort, shiftKey, todayKey, weekKeys } from './lib/date'
+import { dayColumnLabel, formatDayLabel, formatWeekdayShort, shiftKey, todayKey, weekKeys } from './lib/date'
 import type { DateKey, Task } from './types'
 
 export default function App() {
@@ -23,13 +23,16 @@ export default function App() {
   const setQuickAddCursor = usePlannerStore((state) => state.setQuickAddCursor)
 
   const today = todayKey()
-  const yesterday = shiftKey(today, -1)
-  const todayRange = ranges[today]
 
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day')
   const [weekAnchor, setWeekAnchor] = useState<DateKey>(today)
-  // Which date the quick-add bar is currently filling. Defaults to (and, in day view, always
-  // stays) today; clicking a date's header in week view retargets it there instead.
+  // How many days the day view's focused (right-hand) column sits from today. 0 = Today, 1 =
+  // Tomorrow, -1 = Yesterday, etc. The left-hand column always trails it by one day.
+  const [dayOffset, setDayOffset] = useState(0)
+  const focusedDate = shiftKey(today, dayOffset)
+  const previousDate = shiftKey(focusedDate, -1)
+  // Which date the quick-add bar is currently filling. Defaults to today; paging the day view
+  // (see `focusDay`) or clicking a date's header in week view retargets it instead.
   const [quickAddDate, setQuickAddDate] = useState<DateKey>(today)
   const [quickAddActive, setQuickAddActive] = useState(false)
   const [quickAddValue, setQuickAddValue] = useState('')
@@ -52,12 +55,22 @@ export default function App() {
   const handleViewModeChange = useCallback(
     (mode: 'day' | 'week') => {
       setViewMode(mode)
+      setDayOffset(0)
       setQuickAddDate(today)
       setQuickAddValue('')
       setQuickAddFocusToken((token) => token + 1)
     },
     [today],
   )
+
+  // Pages the day view's focused column forward/backward, re-targeting quick-add planning at
+  // whichever date is now focused (mirroring `handleSelectPlanningDate`'s week-view behavior).
+  const focusDay = useCallback((offset: number) => {
+    setDayOffset(offset)
+    setQuickAddDate(shiftKey(today, offset))
+    setQuickAddValue('')
+    setQuickAddFocusToken((token) => token + 1)
+  }, [today])
 
   // Clicking a date's header in week view enables the same sequential quick-add flow day view
   // gives today: prompting for an hour range first if that date doesn't have one yet.
@@ -74,10 +87,11 @@ export default function App() {
   }, [selected, tasks])
 
   // Selects the previous/next task (by start time) within the selected task's day, defaulting to
-  // today and wrapping around at either end so up/down always has somewhere to go.
+  // the day view's focused date (or today in week view) and wrapping around at either end so
+  // up/down always has somewhere to go.
   const navigateSelection = useCallback(
     (direction: 1 | -1) => {
-      const date = selectedTask?.date ?? today
+      const date = selectedTask?.date ?? (viewMode === 'day' ? focusedDate : today)
       const dayTasks = [...(tasks[date] ?? [])].sort((a, b) => a.start - b.start)
       if (dayTasks.length === 0) return
       const currentIndex = selectedTask ? dayTasks.findIndex((task) => task.id === selectedTask.id) : -1
@@ -85,12 +99,12 @@ export default function App() {
         currentIndex === -1 ? (direction === 1 ? 0 : dayTasks.length - 1) : (currentIndex + direction + dayTasks.length) % dayTasks.length
       setSelected({ id: dayTasks[nextIndex].id, date })
     },
-    [selectedTask, tasks, today],
+    [selectedTask, tasks, today, viewMode, focusedDate],
   )
 
   // Global keyboard flow. Up/Down (and their w/s aliases) loop through tasks; Left/Right (and a/d)
-  // page through weeks while in week view; q/e switch views; i activates quick-add planning mode;
-  // x requests task deletion; "." jumps week view back to the current week.
+  // page through weeks in week view or single days in day view; q/e switch views; i activates
+  // quick-add planning mode; x requests task deletion; "." jumps week view back to the current week.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement
@@ -154,14 +168,16 @@ export default function App() {
         setWeekAnchor(today)
         return
       }
-      if ((event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') && viewMode === 'week') {
+      if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
         event.preventDefault()
-        setWeekAnchor((anchor) => shiftKey(anchor, -7))
+        if (viewMode === 'week') setWeekAnchor((anchor) => shiftKey(anchor, -7))
+        else focusDay(dayOffset - 1)
         return
       }
-      if ((event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') && viewMode === 'week') {
+      if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
         event.preventDefault()
-        setWeekAnchor((anchor) => shiftKey(anchor, 7))
+        if (viewMode === 'week') setWeekAnchor((anchor) => shiftKey(anchor, 7))
+        else focusDay(dayOffset + 1)
         return
       }
       if (event.key === 'w' || event.key === 'W') {
@@ -181,6 +197,8 @@ export default function App() {
     confirmDeleteTarget,
     abandonEntryPending,
     today,
+    dayOffset,
+    focusDay,
     navigateSelection,
     handleViewModeChange,
     quickAddRange,
@@ -199,8 +217,8 @@ export default function App() {
   }
 
   const dayColumns: CalendarColumnData[] = [
-    { date: yesterday, label: 'Yesterday', sublabel: formatDayLabel(yesterday), range: ranges[yesterday], tasks: tasks[yesterday] ?? [], muted: true },
-    { date: today, label: 'Today', sublabel: formatDayLabel(today), range: todayRange, tasks: tasks[today] ?? [] },
+    { date: previousDate, ...dayColumnLabel(dayOffset - 1, previousDate), range: ranges[previousDate], tasks: tasks[previousDate] ?? [], muted: true },
+    { date: focusedDate, ...dayColumnLabel(dayOffset, focusedDate), range: ranges[focusedDate], tasks: tasks[focusedDate] ?? [] },
   ]
 
   const weekColumns: CalendarColumnData[] = weekKeys(weekAnchor).map((date) => ({

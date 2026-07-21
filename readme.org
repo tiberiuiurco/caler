@@ -9,7 +9,9 @@ host).
 
 * Features
 
-- Plan the day by hour, 0-24, side by side with yesterday for context.
+- Plan the day by hour, 0-24, side by side with the previous day for context.
+  Page the focused day forward/backward with ~←~/~→~ or ~a~/~d~; beyond
+  yesterday/today/tomorrow the column header just shows the date.
 - On first open, pick today's active hours (e.g. ~5-21~), then rapid-fire
   entries as ~DURATION TEXT~ (e.g. ~1.5 Write report~) to fill the day without
   touching the mouse. Enter just a ~DURATION~ with no text (e.g. ~1~) to skip
@@ -68,7 +70,7 @@ publishes ~dist/~ to GitHub Pages on every push to ~main~ (enable Pages →
 | Key                      | Action                                                                                                                                              |
 |---------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
 | ~↑~ / ~↓~ (or ~w~ / ~s~)  | Loop through the day's tasks, wrapping at either end. The arrow keys work even while typing in the quick-add bar — if there's unsaved text, you'll be asked before it's discarded. |
-| ~←~ / ~→~ (or ~a~ / ~d~)  | Page the week view back/forward one week                                                                                                          |
+| ~←~ / ~→~ (or ~a~ / ~d~)  | Page one day back/forward in Day view, or one week back/forward in Week view                                                                      |
 | ~.~                       | Jump the week view back to the current week                                                                                                       |
 | ~q~                       | Switch to Week view (resets quick-add planning back to today)                                                                                     |
 | ~e~                       | Switch to Day view (resets quick-add planning back to today)                                                                                      |
