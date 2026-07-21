@@ -70,8 +70,9 @@ publishes ~dist/~ to GitHub Pages on every push to ~main~ (enable Pages →
 | ~↑~ / ~↓~ (or ~w~ / ~s~)  | Loop through the day's tasks, wrapping at either end. The arrow keys work even while typing in the quick-add bar — if there's unsaved text, you'll be asked before it's discarded. |
 | ~←~ / ~→~ (or ~a~ / ~d~)  | Page the week view back/forward one week                                                                                                          |
 | ~.~                       | Jump the week view back to the current week                                                                                                       |
-| ~q~                       | Switch to Week view                                                                                                                               |
-| ~e~                       | Switch to Day view                                                                                                                                 |
+| ~q~                       | Switch to Week view (resets quick-add planning back to today)                                                                                     |
+| ~e~                       | Switch to Day view (resets quick-add planning back to today)                                                                                      |
+| ~i~                       | Activate the quick-add bar for whichever date is currently being planned (same as "+Continue")                                                    |
 | ~x~                       | Delete the selected task (asks for confirmation)                                                                                                  |
 | double-right-click        | Delete a task instantly, no confirmation                                                                                                           |
 | ~t~                       | Toggle light/dark theme                                                                                                                            |

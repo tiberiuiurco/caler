@@ -46,11 +46,18 @@ export default function App() {
     if (hasQuickAddRange) setQuickAddActive(true)
   }, [hasQuickAddRange, quickAddDate])
 
-  function handleViewModeChange(mode: 'day' | 'week') {
-    setViewMode(mode)
-    // Day view is always about today; leaving week view drops any other in-progress planning date.
-    if (mode === 'day') setQuickAddDate(today)
-  }
+  // Switching the view surface (either way: day<->week, via the header buttons or the q/e
+  // shortcuts) always resets quick-add planning back to today, with a clean, empty draft.
+  // Click a date's header in week view to explicitly target a different day again.
+  const handleViewModeChange = useCallback(
+    (mode: 'day' | 'week') => {
+      setViewMode(mode)
+      setQuickAddDate(today)
+      setQuickAddValue('')
+      setQuickAddFocusToken((token) => token + 1)
+    },
+    [today],
+  )
 
   // Clicking a date's header in week view enables the same sequential quick-add flow day view
   // gives today: prompting for an hour range first if that date doesn't have one yet.
@@ -82,8 +89,8 @@ export default function App() {
   )
 
   // Global keyboard flow. Up/Down (and their w/s aliases) loop through tasks; Left/Right (and a/d)
-  // page through weeks while in week view; q/e switch views; x requests task deletion; "." jumps
-  // week view back to the current week.
+  // page through weeks while in week view; q/e switch views; i activates quick-add planning mode;
+  // x requests task deletion; "." jumps week view back to the current week.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement
@@ -117,11 +124,22 @@ export default function App() {
         return
       }
       if (event.key === 'q' || event.key === 'Q') {
-        setViewMode('week')
+        handleViewModeChange('week')
         return
       }
       if (event.key === 'e' || event.key === 'E') {
-        setViewMode('day')
+        handleViewModeChange('day')
+        return
+      }
+      // Activates quick-add for whichever date is currently targeted (same as clicking
+      // "+Continue adding tasks"). Once active the bar auto-focuses itself, so this can
+      // only ever fire while it's off — typing "i" into the bar itself just types "i".
+      if ((event.key === 'i' || event.key === 'I') && !quickAddActive) {
+        if (quickAddRange) {
+          event.preventDefault()
+          setQuickAddActive(true)
+          setQuickAddFocusToken((token) => token + 1)
+        }
         return
       }
       if (event.key === 'x' || event.key === 'X') {
@@ -156,7 +174,18 @@ export default function App() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedTask, tasks, viewMode, confirmDeleteTarget, abandonEntryPending, today, navigateSelection])
+  }, [
+    selectedTask,
+    tasks,
+    viewMode,
+    confirmDeleteTarget,
+    abandonEntryPending,
+    today,
+    navigateSelection,
+    handleViewModeChange,
+    quickAddRange,
+    quickAddActive,
+  ])
 
   function handleQuickAddSubmit(duration: number, title: string) {
     if (!quickAddRange) return

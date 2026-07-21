@@ -40,8 +40,9 @@ Single-user, no login, no backend — every plan lives in your browser's
 | `w` / `s` | Same as `↑` / `↓` (only outside text fields). |
 | `←` / `→` or `a` / `d` | Page the week view back/forward one week. |
 | `.` | Jump the week view back to the current week. |
-| `q` | Switch to Week view. |
-| `e` | Switch to Day view. |
+| `q` | Switch to Week view (resets quick-add planning back to today). |
+| `e` | Switch to Day view (resets quick-add planning back to today). |
+| `i` | Activate the quick-add bar for whichever date is currently being planned (same as "+Continue"). |
 | `x` | Delete the selected task (asks for confirmation). |
 | Double-right-click a task | Delete it instantly, no confirmation. |
 | `t` | Toggle light/dark theme. |
