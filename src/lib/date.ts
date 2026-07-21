@@ -32,6 +32,16 @@ export function formatHour(hour: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
+/** Inverse of `formatHour`: parses a "HH:MM" string (as produced by an <input type="time">) into decimal hours. */
+export function parseTimeToHours(value: string): number | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours < 0 || hours > 24 || minutes < 0 || minutes > 59) return null
+  return hours + minutes / 60
+}
+
 export function formatDayLabel(key: DateKey): string {
   return format(keyToDate(key), 'EEEE, MMM d')
 }
@@ -39,3 +49,13 @@ export function formatDayLabel(key: DateKey): string {
 export function formatWeekdayShort(key: DateKey): string {
   return format(keyToDate(key), 'EEE d')
 }
+
+/**
+ * Fixed-width week range label ("Jul 21 – Jul 27"): month abbreviations are
+ * always 3 letters and `dd` always 2 digits, so the rendered width never
+ * jitters as the header's prev/next buttons are clicked.
+ */
+export function formatWeekRangeLabel(weekStart: DateKey, weekEnd: DateKey): string {
+  return `${format(keyToDate(weekStart), 'MMM dd')} – ${format(keyToDate(weekEnd), 'MMM dd')}`
+}
+

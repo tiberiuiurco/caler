@@ -5,22 +5,36 @@ import { parseEntry } from '../lib/parseEntry'
 interface QuickAddBarProps {
   cursor: number
   rangeEnd: number
+  value: string
+  onValueChange: (value: string) => void
   onSubmit: (duration: number, title: string) => void
   onDismiss: () => void
+  /** Bumped whenever a parent action (e.g. cancelling the "abandon entry?" prompt) wants focus restored. */
+  focusToken: number
+  /** While true, losing focus (e.g. to a confirmation dialog) should not auto-dismiss the bar. */
+  suppressBlurDismiss?: boolean
 }
 
 /**
  * Small always-visible input that sequentially fills the remainder of the day.
  * Stays focused after every submission so the user never has to reach for the mouse.
  */
-export function QuickAddBar({ cursor, rangeEnd, onSubmit, onDismiss }: QuickAddBarProps) {
-  const [value, setValue] = useState('')
+export function QuickAddBar({
+  cursor,
+  rangeEnd,
+  value,
+  onValueChange,
+  onSubmit,
+  onDismiss,
+  focusToken,
+  suppressBlurDismiss,
+}: QuickAddBarProps) {
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     inputRef.current?.focus()
-  }, [cursor])
+  }, [cursor, focusToken])
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -30,7 +44,6 @@ export function QuickAddBar({ cursor, rangeEnd, onSubmit, onDismiss }: QuickAddB
       return
     }
     onSubmit(parsed.duration, parsed.title)
-    setValue('')
     setError(null)
   }
 
@@ -38,17 +51,19 @@ export function QuickAddBar({ cursor, rangeEnd, onSubmit, onDismiss }: QuickAddB
     <form
       onSubmit={handleSubmit}
       onBlur={(event) => {
-        // Dismiss only when focus truly leaves the bar (not when it moves between its own children).
-        if (!event.currentTarget.contains(event.relatedTarget)) onDismiss()
+        // Dismiss only when focus truly leaves the bar (not when it moves between its own children,
+        // and not while a confirmation dialog is briefly stealing focus).
+        if (!suppressBlurDismiss && !event.currentTarget.contains(event.relatedTarget)) onDismiss()
       }}
       className="mx-5 mt-3 flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
     >
       <span className="shrink-0 font-mono text-xs text-neutral-400">{formatHour(cursor)}</span>
       <input
         ref={inputRef}
+        data-nav-guard="quickadd"
         value={value}
         onChange={(event) => {
-          setValue(event.target.value)
+          onValueChange(event.target.value)
           setError(null)
         }}
         onKeyDown={(event) => {
@@ -67,3 +82,4 @@ export function QuickAddBar({ cursor, rangeEnd, onSubmit, onDismiss }: QuickAddB
     </form>
   )
 }
+

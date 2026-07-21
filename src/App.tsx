@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Header } from './components/Header'
 import { RangeModal } from './components/RangeModal'
 import { QuickAddBar } from './components/QuickAddBar'
 import { TaskSidebar } from './components/TaskSidebar'
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { CalendarGrid, type CalendarColumnData } from './components/CalendarGrid'
 import { usePlannerStore } from './store/plannerStore'
 import { useTheme } from './hooks/useTheme'
@@ -18,6 +19,7 @@ export default function App() {
   const quickAddCursor = usePlannerStore((state) => state.quickAddCursor)
   const setRange = usePlannerStore((state) => state.setRange)
   const addTask = usePlannerStore((state) => state.addTask)
+  const deleteTask = usePlannerStore((state) => state.deleteTask)
   const setQuickAddCursor = usePlannerStore((state) => state.setQuickAddCursor)
 
   const today = todayKey()
@@ -27,7 +29,11 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day')
   const [weekAnchor, setWeekAnchor] = useState<DateKey>(today)
   const [quickAddActive, setQuickAddActive] = useState(false)
+  const [quickAddValue, setQuickAddValue] = useState('')
+  const [quickAddFocusToken, setQuickAddFocusToken] = useState(0)
   const [selected, setSelected] = useState<{ id: string; date: DateKey } | null>(null)
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ id: string; date: DateKey; title: string } | null>(null)
+  const [abandonEntryPending, setAbandonEntryPending] = useState<{ direction: 1 | -1 } | null>(null)
 
   // As soon as today's active range exists, drop straight into sequential quick-add.
   const hasTodayRange = Boolean(todayRange)
@@ -35,22 +41,102 @@ export default function App() {
     if (hasTodayRange) setQuickAddActive(true)
   }, [hasTodayRange])
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      const target = event.target as HTMLElement
-      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
-      if (isTyping) return
-      if (event.key === 't' || event.key === 'T') usePlannerStore.getState().toggleTheme()
-      if (event.key === 'w' || event.key === 'W') setViewMode((mode) => (mode === 'day' ? 'week' : 'day'))
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
   const selectedTask: Task | null = useMemo(() => {
     if (!selected) return null
     return tasks[selected.date]?.find((task) => task.id === selected.id) ?? null
   }, [selected, tasks])
+
+  // Selects the previous/next task (by start time) within the selected task's day, defaulting to
+  // today and wrapping around at either end so up/down always has somewhere to go.
+  const navigateSelection = useCallback(
+    (direction: 1 | -1) => {
+      const date = selectedTask?.date ?? today
+      const dayTasks = [...(tasks[date] ?? [])].sort((a, b) => a.start - b.start)
+      if (dayTasks.length === 0) return
+      const currentIndex = selectedTask ? dayTasks.findIndex((task) => task.id === selectedTask.id) : -1
+      const nextIndex =
+        currentIndex === -1 ? (direction === 1 ? 0 : dayTasks.length - 1) : (currentIndex + direction + dayTasks.length) % dayTasks.length
+      setSelected({ id: dayTasks[nextIndex].id, date })
+    },
+    [selectedTask, tasks, today],
+  )
+
+  // Global keyboard flow. Up/Down (and their w/s aliases) loop through tasks; Left/Right (and a/d)
+  // page through weeks while in week view; q/e switch views; x requests task deletion; "." jumps
+  // week view back to the current week.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement
+      const isTextarea = target.tagName === 'TEXTAREA'
+      const isTimeInput = target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'time'
+      const isTyping = target.tagName === 'INPUT' || isTextarea
+
+      // Up/Down always navigate tasks, even while typing, except inside multi-line text or time
+      // steppers where the arrow keys have their own native meaning.
+      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isTextarea && !isTimeInput) {
+        if (confirmDeleteTarget || abandonEntryPending) return
+        const direction = event.key === 'ArrowUp' ? -1 : 1
+        const isQuickAddField = target.getAttribute('data-nav-guard') === 'quickadd'
+        event.preventDefault()
+        if (isQuickAddField && (target as HTMLInputElement).value.trim() !== '') {
+          setAbandonEntryPending({ direction })
+        } else {
+          navigateSelection(direction)
+        }
+        return
+      }
+
+      if (isTyping || confirmDeleteTarget || abandonEntryPending) return
+
+      if (event.key === 'Escape') {
+        if (selectedTask) setSelected(null)
+        return
+      }
+      if (event.key === 't' || event.key === 'T') {
+        usePlannerStore.getState().toggleTheme()
+        return
+      }
+      if (event.key === 'q' || event.key === 'Q') {
+        setViewMode('week')
+        return
+      }
+      if (event.key === 'e' || event.key === 'E') {
+        setViewMode('day')
+        return
+      }
+      if (event.key === 'x' || event.key === 'X') {
+        if (selectedTask) {
+          event.preventDefault()
+          setConfirmDeleteTarget({ id: selectedTask.id, date: selectedTask.date, title: selectedTask.title })
+        }
+        return
+      }
+      if (event.key === '.' && viewMode === 'week') {
+        event.preventDefault()
+        setWeekAnchor(today)
+        return
+      }
+      if ((event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') && viewMode === 'week') {
+        event.preventDefault()
+        setWeekAnchor((anchor) => shiftKey(anchor, -7))
+        return
+      }
+      if ((event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') && viewMode === 'week') {
+        event.preventDefault()
+        setWeekAnchor((anchor) => shiftKey(anchor, 7))
+        return
+      }
+      if (event.key === 'w' || event.key === 'W') {
+        navigateSelection(-1)
+        return
+      }
+      if (event.key === 's' || event.key === 'S') {
+        navigateSelection(1)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedTask, tasks, viewMode, confirmDeleteTarget, abandonEntryPending, today, navigateSelection])
 
   function handleQuickAddSubmit(duration: number, title: string) {
     if (!todayRange) return
@@ -58,6 +144,7 @@ export default function App() {
     addTask(today, cursor, duration, title)
     const next = cursor + duration
     setQuickAddCursor(today, next)
+    setQuickAddValue('')
     if (next >= todayRange.end) setQuickAddActive(false)
   }
 
@@ -81,6 +168,37 @@ export default function App() {
     <div className="flex h-screen flex-col">
       {!todayRange && <RangeModal onConfirm={(start, end) => setRange(today, { start, end })} />}
 
+      {confirmDeleteTarget && (
+        <ConfirmDialog
+          title="Delete task?"
+          message={`"${confirmDeleteTarget.title || 'Untitled task'}" will be permanently removed.`}
+          onConfirm={() => {
+            deleteTask(confirmDeleteTarget.id, confirmDeleteTarget.date)
+            setSelected(null)
+            setConfirmDeleteTarget(null)
+          }}
+          onCancel={() => setConfirmDeleteTarget(null)}
+        />
+      )}
+
+      {abandonEntryPending && (
+        <ConfirmDialog
+          title="Discard unsaved entry?"
+          message="You've started typing a task but haven't added it yet. Moving on will discard it."
+          confirmLabel="Discard"
+          onConfirm={() => {
+            const { direction } = abandonEntryPending
+            setQuickAddValue('')
+            setAbandonEntryPending(null)
+            navigateSelection(direction)
+          }}
+          onCancel={() => {
+            setAbandonEntryPending(null)
+            setQuickAddFocusToken((token) => token + 1)
+          }}
+        />
+      )}
+
       <Header
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -93,8 +211,12 @@ export default function App() {
         <QuickAddBar
           cursor={cursor}
           rangeEnd={todayRange.end}
+          value={quickAddValue}
+          onValueChange={setQuickAddValue}
           onSubmit={handleQuickAddSubmit}
           onDismiss={() => setQuickAddActive(false)}
+          focusToken={quickAddFocusToken}
+          suppressBlurDismiss={Boolean(abandonEntryPending)}
         />
       )}
 
@@ -121,3 +243,4 @@ export default function App() {
     </div>
   )
 }
+

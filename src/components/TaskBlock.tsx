@@ -67,7 +67,7 @@ export function TaskBlock({ task, selected, onSelect }: TaskBlockProps) {
       <span className="truncate text-xs font-medium">{task.title || 'Untitled task'}</span>
       {duration * HOUR_HEIGHT > 30 && (
         <span className="truncate text-[11px] opacity-70">
-          {formatHour(task.start)} · {duration}h
+          {formatHour(task.start)} – {formatHour(task.start + duration)}
         </span>
       )}
       <div

@@ -1,5 +1,5 @@
 import { ThemeToggle } from './ThemeToggle'
-import { formatDayLabel, shiftKey, weekKeys } from '../lib/date'
+import { formatWeekRangeLabel, shiftKey, weekKeys } from '../lib/date'
 import type { DateKey } from '../types'
 
 interface HeaderProps {
@@ -48,18 +48,18 @@ export function Header({ viewMode, onViewModeChange, weekAnchor, onWeekAnchorCha
             type="button"
             aria-label="Previous week"
             onClick={() => onWeekAnchorChange(shiftKey(weekAnchor, -7))}
-            className="grid size-7 place-items-center rounded-full transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="grid size-7 shrink-0 place-items-center rounded-full transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
           >
             ‹
           </button>
-          <span className="tabular-nums">
-            {formatDayLabel(week[0]).replace(/^\w+, /, '')} – {formatDayLabel(week[6]).replace(/^\w+, /, '')}
+          <span className="inline-block w-32 text-center font-mono tabular-nums">
+            {formatWeekRangeLabel(week[0], week[6])}
           </span>
           <button
             type="button"
             aria-label="Next week"
             onClick={() => onWeekAnchorChange(shiftKey(weekAnchor, 7))}
-            className="grid size-7 place-items-center rounded-full transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="grid size-7 shrink-0 place-items-center rounded-full transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
           >
             ›
           </button>

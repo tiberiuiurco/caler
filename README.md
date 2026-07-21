@@ -25,9 +25,23 @@ Single-user, no login, no backend — every plan lives in your browser's
    Click and drag on empty calendar space to create a new task in that slot.
 4. **Double right-click** a task to delete it instantly.
 5. Toggle **Week** view (Monday-start, with prev/next arrows) from the header,
-   or **Day** to return. `W` and `T` are keyboard shortcuts for view/theme
-   toggling when focus isn't in a text field.
+   or **Day** to return.
 6. **Export** in the header downloads all ranges/tasks as a JSON file.
+
+## Keyboard shortcuts
+
+| Key | Action |
+| --- | --- |
+| `↑` / `↓` | Loop through the day's tasks (wraps at either end). Works even while typing in the quick-add bar — if you've typed something unsaved, you'll be asked before it's discarded. |
+| `w` / `s` | Same as `↑` / `↓` (only outside text fields). |
+| `←` / `→` or `a` / `d` | Page the week view back/forward one week. |
+| `.` | Jump the week view back to the current week. |
+| `q` | Switch to Week view. |
+| `e` | Switch to Day view. |
+| `x` | Delete the selected task (asks for confirmation). |
+| Double-right-click a task | Delete it instantly, no confirmation. |
+| `t` | Toggle light/dark theme. |
+| `Escape` | Close the sidebar / cancel a dialog. |
 
 ## Development
 

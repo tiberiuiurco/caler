@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
 import { usePlannerStore } from '../store/plannerStore'
-import { formatHour } from '../lib/date'
+import { formatHour, parseTimeToHours } from '../lib/date'
+import { SNAP_HOURS } from '../lib/constants'
 import type { Task } from '../types'
 
 interface TaskSidebarProps {
@@ -8,23 +8,31 @@ interface TaskSidebarProps {
   onClose: () => void
 }
 
+/** Clamps 24:00 (midnight rollover) down to a value <input type="time"> accepts. */
+function toTimeInputValue(hour: number): string {
+  return hour >= 24 ? '23:59' : formatHour(hour)
+}
+
+// Escape-to-close and other shortcuts are handled centrally in App so they compose
+// correctly with the delete-confirmation dialog instead of racing separate listeners.
 export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
   const updateTask = usePlannerStore((state) => state.updateTask)
   const deleteTask = usePlannerStore((state) => state.deleteTask)
-  const titleRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    titleRef.current?.focus()
-    titleRef.current?.select()
-  }, [task.id])
+  function handleStartChange(value: string) {
+    const newStart = parseTimeToHours(value)
+    if (newStart === null) return
+    const end = task.start + task.duration
+    const duration = Math.max(SNAP_HOURS, end - newStart)
+    updateTask(task.id, task.date, { start: newStart, duration })
+  }
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  function handleEndChange(value: string) {
+    const newEnd = parseTimeToHours(value)
+    if (newEnd === null) return
+    const duration = Math.max(SNAP_HOURS, newEnd - task.start)
+    updateTask(task.id, task.date, { duration })
+  }
 
   return (
     <aside className="flex w-80 shrink-0 flex-col gap-4 border-l border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
@@ -43,7 +51,6 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Title</span>
         <input
-          ref={titleRef}
           value={task.title}
           onChange={(event) => updateTask(task.id, task.date, { title: event.target.value })}
           className="rounded-lg border border-neutral-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-700 dark:focus:border-neutral-500"
@@ -61,12 +68,27 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
         />
       </label>
 
-      <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
-        <span>{formatHour(task.start)}</span>
-        <span>→</span>
-        <span>{formatHour(task.start + task.duration)}</span>
-        <span className="ml-auto">{task.duration}h</span>
+      <div className="flex items-center gap-3">
+        <label className="flex flex-1 flex-col gap-1.5">
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Start</span>
+          <input
+            type="time"
+            value={toTimeInputValue(task.start)}
+            onChange={(event) => handleStartChange(event.target.value)}
+            className="rounded-lg border border-neutral-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-700 dark:focus:border-neutral-500"
+          />
+        </label>
+        <label className="flex flex-1 flex-col gap-1.5">
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">End</span>
+          <input
+            type="time"
+            value={toTimeInputValue(task.start + task.duration)}
+            onChange={(event) => handleEndChange(event.target.value)}
+            className="rounded-lg border border-neutral-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-700 dark:focus:border-neutral-500"
+          />
+        </label>
       </div>
+      <p className="-mt-2 text-xs text-neutral-400 dark:text-neutral-500">{task.duration}h duration</p>
 
       <button
         type="button"
@@ -79,8 +101,9 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
         Delete task
       </button>
       <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-        Tip: double-right-click a task to delete it instantly.
+        Tip: double-right-click, or select and press "d", to delete a task.
       </p>
     </aside>
   )
 }
+
