@@ -15,7 +15,8 @@ function overlaps(a: Task, b: Task): boolean {
  * Lays out a day's tasks so overlapping ones sit side by side instead of stacking on top of
  * each other. Tasks that transitively overlap (through a chain of pairwise overlaps) form a
  * single group; the group's width is split evenly across all of its members, ordered left to
- * right by duration (shortest first), breaking ties alphabetically by title.
+ * right by start time (earliest first), then by duration (shortest first), breaking any
+ * remaining ties alphabetically by title.
  */
 export function layoutTasks(tasks: Task[]): Map<string, TaskLayout> {
   const layout = new Map<string, TaskLayout>()
@@ -39,7 +40,8 @@ export function layoutTasks(tasks: Task[]): Map<string, TaskLayout> {
     }
 
     const ordered = [...group].sort(
-      (a, b) => a.duration - b.duration || a.title.localeCompare(b.title) || a.id.localeCompare(b.id),
+      (a, b) =>
+        a.start - b.start || a.duration - b.duration || a.title.localeCompare(b.title) || a.id.localeCompare(b.id),
     )
     const width = 100 / ordered.length
     ordered.forEach((member, index) => {
