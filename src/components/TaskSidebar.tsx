@@ -101,7 +101,7 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
         Delete task
       </button>
       <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-        Tip: double-right-click, or select and press "d", to delete a task.
+        Tip: double-right-click, or select and press "x", to delete a task.
       </p>
     </aside>
   )

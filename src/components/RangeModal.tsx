@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 
 interface RangeModalProps {
+  /** When set, the modal is for a date other than today (e.g. picked in week view) and shows it explicitly. */
+  dateLabel?: string
   onConfirm: (start: number, end: number) => void
 }
 
 const RANGE_PATTERN = /^\s*(\d{1,2}(?:\.\d+)?)\s*-\s*(\d{1,2}(?:\.\d+)?)\s*$/
 
-export function RangeModal({ onConfirm }: RangeModalProps) {
+export function RangeModal({ dateLabel, onConfirm }: RangeModalProps) {
   const [value, setValue] = useState('5-21')
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -39,9 +41,9 @@ export function RangeModal({ onConfirm }: RangeModalProps) {
         onSubmit={handleSubmit}
         className="w-80 rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
       >
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Plan today</h2>
+        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Plan {dateLabel ?? 'today'}</h2>
         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          What hours are active today? (e.g. <span className="font-mono">5-21</span>)
+          What hours are active {dateLabel ? 'that day' : 'today'}? (e.g. <span className="font-mono">5-21</span>)
         </p>
         <input
           ref={inputRef}

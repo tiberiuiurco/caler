@@ -13,6 +13,8 @@ interface QuickAddBarProps {
   focusToken: number
   /** While true, losing focus (e.g. to a confirmation dialog) should not auto-dismiss the bar. */
   suppressBlurDismiss?: boolean
+  /** When set, the bar is filling a date other than today (e.g. picked in week view) and shows it explicitly. */
+  dateLabel?: string
 }
 
 /**
@@ -28,6 +30,7 @@ export function QuickAddBar({
   onDismiss,
   focusToken,
   suppressBlurDismiss,
+  dateLabel,
 }: QuickAddBarProps) {
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -57,6 +60,7 @@ export function QuickAddBar({
       }}
       className="mx-5 mt-3 flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
     >
+      {dateLabel && <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">{dateLabel}</span>}
       <span className="shrink-0 font-mono text-xs text-neutral-400">{formatHour(cursor)}</span>
       <input
         ref={inputRef}

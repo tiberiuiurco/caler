@@ -27,7 +27,9 @@ Single-user, no login, no backend — every plan lives in your browser's
    Click and drag on empty calendar space to create a new task in that slot.
 4. **Double right-click** a task to delete it instantly.
 5. Toggle **Week** view (Monday-start, with prev/next arrows) from the header,
-   or **Day** to return.
+   or **Day** to return. Click any date's header in Week view to plan it the
+   same way as today — it prompts for that day's active hours if it doesn't
+   have any yet, then drops you into the same sequential quick-add flow.
 6. **Export** in the header downloads all ranges/tasks as a JSON file.
 
 ## Keyboard shortcuts

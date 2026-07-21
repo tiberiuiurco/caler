@@ -28,6 +28,9 @@ export default function App() {
 
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day')
   const [weekAnchor, setWeekAnchor] = useState<DateKey>(today)
+  // Which date the quick-add bar is currently filling. Defaults to (and, in day view, always
+  // stays) today; clicking a date's header in week view retargets it there instead.
+  const [quickAddDate, setQuickAddDate] = useState<DateKey>(today)
   const [quickAddActive, setQuickAddActive] = useState(false)
   const [quickAddValue, setQuickAddValue] = useState('')
   const [quickAddFocusToken, setQuickAddFocusToken] = useState(0)
@@ -35,11 +38,28 @@ export default function App() {
   const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ id: string; date: DateKey; title: string } | null>(null)
   const [abandonEntryPending, setAbandonEntryPending] = useState<{ direction: 1 | -1 } | null>(null)
 
-  // As soon as today's active range exists, drop straight into sequential quick-add.
-  const hasTodayRange = Boolean(todayRange)
+  const quickAddRange = ranges[quickAddDate]
+
+  // As soon as the planning date's active range exists, drop straight into sequential quick-add.
+  const hasQuickAddRange = Boolean(quickAddRange)
   useEffect(() => {
-    if (hasTodayRange) setQuickAddActive(true)
-  }, [hasTodayRange])
+    if (hasQuickAddRange) setQuickAddActive(true)
+  }, [hasQuickAddRange, quickAddDate])
+
+  function handleViewModeChange(mode: 'day' | 'week') {
+    setViewMode(mode)
+    // Day view is always about today; leaving week view drops any other in-progress planning date.
+    if (mode === 'day') setQuickAddDate(today)
+  }
+
+  // Clicking a date's header in week view enables the same sequential quick-add flow day view
+  // gives today: prompting for an hour range first if that date doesn't have one yet.
+  function handleSelectPlanningDate(date: DateKey) {
+    setQuickAddDate(date)
+    setQuickAddValue('')
+    setQuickAddFocusToken((token) => token + 1)
+    if (ranges[date]) setQuickAddActive(true)
+  }
 
   const selectedTask: Task | null = useMemo(() => {
     if (!selected) return null
@@ -139,14 +159,14 @@ export default function App() {
   }, [selectedTask, tasks, viewMode, confirmDeleteTarget, abandonEntryPending, today, navigateSelection])
 
   function handleQuickAddSubmit(duration: number, title: string) {
-    if (!todayRange) return
-    const cursor = quickAddCursor[today] ?? todayRange.start
+    if (!quickAddRange) return
+    const cursor = quickAddCursor[quickAddDate] ?? quickAddRange.start
     // A bare duration with no title just skips that stretch of time, no task is created.
-    if (title.trim() !== '') addTask(today, cursor, duration, title)
+    if (title.trim() !== '') addTask(quickAddDate, cursor, duration, title)
     const next = cursor + duration
-    setQuickAddCursor(today, next)
+    setQuickAddCursor(quickAddDate, next)
     setQuickAddValue('')
-    if (next >= todayRange.end) setQuickAddActive(false)
+    if (next >= quickAddRange.end) setQuickAddActive(false)
   }
 
   const dayColumns: CalendarColumnData[] = [
@@ -162,12 +182,13 @@ export default function App() {
     muted: date !== today,
   }))
 
-  const cursor = quickAddCursor[today] ?? todayRange?.start ?? 0
-  const showContinueButton = Boolean(todayRange) && !quickAddActive && cursor < (todayRange?.end ?? 0)
+  const cursor = quickAddCursor[quickAddDate] ?? quickAddRange?.start ?? 0
+  const showContinueButton = Boolean(quickAddRange) && !quickAddActive && cursor < (quickAddRange?.end ?? 0)
+  const quickAddDateLabel = quickAddDate === today ? undefined : formatDayLabel(quickAddDate)
 
   return (
     <div className="flex h-screen flex-col">
-      {!todayRange && <RangeModal onConfirm={(start, end) => setRange(today, { start, end })} />}
+      {!quickAddRange && <RangeModal dateLabel={quickAddDateLabel} onConfirm={(start, end) => setRange(quickAddDate, { start, end })} />}
 
       {confirmDeleteTarget && (
         <ConfirmDialog
@@ -202,16 +223,17 @@ export default function App() {
 
       <Header
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         weekAnchor={weekAnchor}
         onWeekAnchorChange={setWeekAnchor}
         onExport={() => exportPlannerData({ ranges, tasks })}
       />
 
-      {viewMode === 'day' && todayRange && quickAddActive && (
+      {quickAddRange && quickAddActive && (
         <QuickAddBar
           cursor={cursor}
-          rangeEnd={todayRange.end}
+          rangeEnd={quickAddRange.end}
+          dateLabel={quickAddDateLabel}
           value={quickAddValue}
           onValueChange={setQuickAddValue}
           onSubmit={handleQuickAddSubmit}
@@ -221,14 +243,14 @@ export default function App() {
         />
       )}
 
-      {viewMode === 'day' && showContinueButton && (
+      {showContinueButton && (
         <div className="mx-5 mt-3">
           <button
             type="button"
             onClick={() => setQuickAddActive(true)}
             className="rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-sm text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
           >
-            + Continue adding tasks
+            + Continue adding tasks{quickAddDateLabel ? ` for ${quickAddDateLabel}` : ''}
           </button>
         </div>
       )}
@@ -238,6 +260,8 @@ export default function App() {
           columns={viewMode === 'day' ? dayColumns : weekColumns}
           selectedTaskId={selected?.id ?? null}
           onSelectTask={(task) => setSelected({ id: task.id, date: task.date })}
+          planningDate={viewMode === 'week' ? quickAddDate : null}
+          onSelectPlanningDate={viewMode === 'week' ? handleSelectPlanningDate : undefined}
         />
         {selectedTask && <TaskSidebar task={selectedTask} onClose={() => setSelected(null)} />}
       </div>

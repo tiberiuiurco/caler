@@ -20,6 +20,9 @@ host).
 - Delete a task by double-right-clicking it, or by selecting it and pressing
   ~x~ (with a confirmation prompt).
 - Week view (Monday-start) with keyboard/arrow navigation between weeks.
+  Click any date's header there to plan it just like today: it prompts for
+  that day's active hours first if needed, then reuses the same sequential
+  quick-add flow.
 - Light/dark theme, toggleable and persisted.
 - Export all data as a JSON file.
 - A keyboard-first flow throughout — see [[#keyboard-shortcuts][Keyboard shortcuts]].
