@@ -41,6 +41,11 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
   const duration = liveDuration ?? task.duration
 
   function handleResizeStart(event: React.MouseEvent) {
+    // Only the left button starts a resize; a right-click here (e.g. on a short task, where the
+    // resize handle strip covers more of its height) must fall through to the native contextmenu
+    // event untouched, or double-right-click-to-delete stops working (calling preventDefault on a
+    // right-button mousedown suppresses the subsequent contextmenu event in Firefox/Gecko).
+    if (event.button !== 0) return
     event.stopPropagation()
     event.preventDefault()
     resizingRef.current = true
@@ -67,8 +72,10 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
 
   /** Drags the task's body to change its start time (and day, dragging across columns). */
   function handleBodyMouseDown(event: React.MouseEvent) {
-    event.stopPropagation()
+    // Leave right-clicks (and any other non-left button) alone so they reach the native
+    // contextmenu event untouched, for double-right-click-to-delete.
     if (event.button !== 0) return
+    event.stopPropagation()
 
     const blockRect = event.currentTarget.getBoundingClientRect()
     const grabOffsetX = event.clientX - blockRect.left
