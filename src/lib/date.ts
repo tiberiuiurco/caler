@@ -43,9 +43,14 @@ export function resolveMonthDay(month: number, day: number, fromKey: DateKey): D
   return toKey(candidate)
 }
 
+/** Returns the Monday date key of the week containing `key`, used as the canonical key for per-week data (e.g. weekly goals). */
+export function weekStartKey(key: DateKey): DateKey {
+  return toKey(startOfWeek(keyToDate(key), { weekStartsOn: 1 }))
+}
+
 /** Returns the 7 date keys for the Monday-started week containing `key`. */
 export function weekKeys(key: DateKey): DateKey[] {
-  const monday = startOfWeek(keyToDate(key), { weekStartsOn: 1 })
+  const monday = keyToDate(weekStartKey(key))
   return Array.from({ length: 7 }, (_, i) => toKey(addDays(monday, i)))
 }
 

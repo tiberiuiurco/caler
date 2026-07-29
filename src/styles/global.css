@@ -41,3 +41,117 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Rendered markdown (weekly goals). Tailwind's preflight strips default element styling, so this
+   restores just enough of it for prose to read naturally. */
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.1em;
+  margin-bottom: 0.4em;
+}
+.markdown-content h1 {
+  font-size: 1.15em;
+}
+.markdown-content h2 {
+  font-size: 1.08em;
+}
+.markdown-content h3,
+.markdown-content h4 {
+  font-size: 1em;
+}
+.markdown-content p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.markdown-content ul,
+.markdown-content ol {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding-left: 1.3em;
+}
+.markdown-content ul {
+  list-style: disc;
+}
+.markdown-content ol {
+  list-style: decimal;
+}
+.markdown-content li {
+  margin-top: 0.15em;
+  margin-bottom: 0.15em;
+}
+.markdown-content li > ul,
+.markdown-content li > ol {
+  margin-top: 0.15em;
+  margin-bottom: 0.15em;
+}
+.markdown-content li:has(> input[type='checkbox']) {
+  list-style: none;
+  margin-left: -1.3em;
+}
+.markdown-content input[type='checkbox'] {
+  margin-right: 0.5em;
+}
+.markdown-content strong {
+  font-weight: 600;
+}
+.markdown-content em {
+  font-style: italic;
+}
+.markdown-content del {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.markdown-content a {
+  @apply text-neutral-900 underline decoration-neutral-300 underline-offset-2 dark:text-white dark:decoration-neutral-600;
+}
+.markdown-content code {
+  @apply rounded bg-neutral-100 px-1 py-0.5 dark:bg-neutral-800;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+}
+.markdown-content pre {
+  @apply rounded-lg bg-neutral-100 dark:bg-neutral-800;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding: 0.6em 0.8em;
+  overflow-x: auto;
+}
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+}
+.markdown-content blockquote {
+  @apply border-neutral-300 text-neutral-500 dark:border-neutral-700 dark:text-neutral-400;
+  border-left-width: 3px;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding-left: 0.8em;
+}
+.markdown-content hr {
+  @apply border-neutral-200 dark:border-neutral-800;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+.markdown-content table {
+  border-collapse: collapse;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  width: 100%;
+}
+.markdown-content th,
+.markdown-content td {
+  @apply border-neutral-200 dark:border-neutral-800;
+  border-width: 1px;
+  padding: 0.3em 0.5em;
+  text-align: left;
+}

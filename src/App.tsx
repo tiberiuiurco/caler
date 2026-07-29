@@ -9,7 +9,19 @@ import { CalendarGrid, type CalendarColumnData } from './components/CalendarGrid
 import { usePlannerStore } from './store/plannerStore'
 import { useTheme } from './hooks/useTheme'
 import { exportPlannerData } from './lib/exportData'
-import { dayColumnLabel, daysFromKey, formatDayLabel, formatWeekdayShort, resolveMonthDay, shiftKey, todayKey, weekKeys } from './lib/date'
+import { WeeklyGoalsSidebar } from './components/WeeklyGoalsSidebar'
+import {
+  dayColumnLabel,
+  daysFromKey,
+  formatDayLabel,
+  formatWeekRangeLabel,
+  formatWeekdayShort,
+  resolveMonthDay,
+  shiftKey,
+  todayKey,
+  weekKeys,
+  weekStartKey,
+} from './lib/date'
 import type { DateKey, Task } from './types'
 
 export default function App() {
@@ -18,10 +30,14 @@ export default function App() {
   const ranges = usePlannerStore((state) => state.ranges)
   const tasks = usePlannerStore((state) => state.tasks)
   const quickAddCursor = usePlannerStore((state) => state.quickAddCursor)
+  const weeklyGoals = usePlannerStore((state) => state.weeklyGoals)
+  const weeklyGoalsExpanded = usePlannerStore((state) => state.weeklyGoalsExpanded)
   const setRange = usePlannerStore((state) => state.setRange)
   const addTask = usePlannerStore((state) => state.addTask)
   const deleteTask = usePlannerStore((state) => state.deleteTask)
   const setQuickAddCursor = usePlannerStore((state) => state.setQuickAddCursor)
+  const setWeeklyGoals = usePlannerStore((state) => state.setWeeklyGoals)
+  const setWeeklyGoalsExpanded = usePlannerStore((state) => state.setWeeklyGoalsExpanded)
 
   const today = todayKey()
 
@@ -261,6 +277,14 @@ export default function App() {
     muted: date !== today,
   }))
 
+  // The week whose goals are shown in the sidebar: the week view's current week, or (in day view)
+  // the week containing the focused/right-hand day — so paging across a week boundary in either
+  // view swaps the goals shown, same as switching weeks in week view.
+  const goalsWeekAnchor = viewMode === 'week' ? weekAnchor : dayRightDate
+  const goalsWeekStart = weekStartKey(goalsWeekAnchor)
+  const goalsWeek = weekKeys(goalsWeekAnchor)
+  const goalsWeekLabel = formatWeekRangeLabel(goalsWeek[0], goalsWeek[6])
+
   const cursor = quickAddCursor[quickAddDate] ?? quickAddRange?.start ?? 0
   const showContinueButton = Boolean(quickAddRange) && !quickAddActive && cursor < (quickAddRange?.end ?? 0)
   const quickAddDateLabel = quickAddDate === today ? undefined : formatDayLabel(quickAddDate)
@@ -316,7 +340,7 @@ export default function App() {
         onViewModeChange={handleViewModeChange}
         weekAnchor={weekAnchor}
         onWeekAnchorChange={setWeekAnchor}
-        onExport={() => exportPlannerData({ ranges, tasks })}
+        onExport={() => exportPlannerData({ ranges, tasks, weeklyGoals })}
       />
 
       {quickAddRange && quickAddActive && (
@@ -355,6 +379,14 @@ export default function App() {
           onTaskMoved={handleTaskMoved}
         />
         {selectedTask && <TaskSidebar task={selectedTask} onClose={() => setSelected(null)} />}
+        <WeeklyGoalsSidebar
+          weekStart={goalsWeekStart}
+          weekLabel={goalsWeekLabel}
+          goals={weeklyGoals[goalsWeekStart] ?? ''}
+          onSaveGoals={(markdown) => setWeeklyGoals(goalsWeekStart, markdown)}
+          expanded={weeklyGoalsExpanded}
+          onExpandedChange={setWeeklyGoalsExpanded}
+        />
       </div>
     </div>
   )

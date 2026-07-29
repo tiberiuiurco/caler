@@ -12,6 +12,10 @@ export interface PlannerState {
   quickAddCursor: Record<DateKey, number>
   /** Live preview of a task currently being dragged, so any day column can render its drop target. */
   dragPreview: DragPreview | null
+  /** Markdown weekly goals, keyed by that week's Monday date (see `weekStartKey`). */
+  weeklyGoals: Record<DateKey, string>
+  /** Whether the weekly goals sidebar is expanded (vs. collapsed to a thin strip). Expanded by default. */
+  weeklyGoalsExpanded: boolean
 
   toggleTheme: () => void
   setRange: (date: DateKey, range: DayRange) => void
@@ -22,7 +26,9 @@ export interface PlannerState {
   deleteTask: (id: string, date: DateKey) => void
   setQuickAddCursor: (date: DateKey, cursor: number) => void
   setDragPreview: (preview: DragPreview | null) => void
-  importData: (data: { ranges: Record<DateKey, DayRange>; tasks: Record<DateKey, Task[]> }) => void
+  setWeeklyGoals: (weekStart: DateKey, markdown: string) => void
+  setWeeklyGoalsExpanded: (expanded: boolean) => void
+  importData: (data: { ranges: Record<DateKey, DayRange>; tasks: Record<DateKey, Task[]>; weeklyGoals?: Record<DateKey, string> }) => void
 }
 
 function snap(value: number): number {
@@ -37,6 +43,8 @@ export const usePlannerStore = create<PlannerState>()(
       tasks: {},
       quickAddCursor: {},
       dragPreview: null,
+      weeklyGoals: {},
+      weeklyGoalsExpanded: true,
 
       toggleTheme: () =>
         set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
@@ -108,7 +116,12 @@ export const usePlannerStore = create<PlannerState>()(
 
       setDragPreview: (preview) => set({ dragPreview: preview }),
 
-      importData: (data) => set({ ranges: data.ranges, tasks: data.tasks }),
+      setWeeklyGoals: (weekStart, markdown) =>
+        set((state) => ({ weeklyGoals: { ...state.weeklyGoals, [weekStart]: markdown } })),
+
+      setWeeklyGoalsExpanded: (expanded) => set({ weeklyGoalsExpanded: expanded }),
+
+      importData: (data) => set({ ranges: data.ranges, tasks: data.tasks, weeklyGoals: data.weeklyGoals ?? {} }),
     }),
     {
       name: LOCAL_STORAGE_KEY,
@@ -117,6 +130,8 @@ export const usePlannerStore = create<PlannerState>()(
         ranges: state.ranges,
         tasks: state.tasks,
         quickAddCursor: state.quickAddCursor,
+        weeklyGoals: state.weeklyGoals,
+        weeklyGoalsExpanded: state.weeklyGoalsExpanded,
       }),
     },
   ),
