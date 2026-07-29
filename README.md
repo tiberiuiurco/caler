@@ -36,7 +36,13 @@ Single-user, no login, no backend — every plan lives in your browser's
    to next year's occurrence instead of the past) and it shows `Today | that
    date`, prompting for its active hours and dropping into quick-add just like
    any other day.
-7. **Export** in the header downloads all ranges/tasks as a JSON file.
+7. **Export** in the header downloads all ranges/tasks/weekly goals as a JSON file.
+8. A **Weekly goals** panel sits on the far right, expanded by default and collapsible to a thin
+   strip (click the arrow, like a browser's vertical tab bar). It shows that week's goals rendered
+   as Markdown; click **Edit** (or **+ Add goals** when empty) to write them, then **Save** or
+   **Cancel**. The week shown follows whatever week you're currently looking at — the week view's
+   current week, or the week containing the day view's focused date — and switches automatically
+   as you page between weeks/days.
 
 ## Keyboard shortcuts
 
