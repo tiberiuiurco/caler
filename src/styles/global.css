@@ -100,6 +100,11 @@ body {
 }
 .markdown-content input[type='checkbox'] {
   margin-right: 0.5em;
+  cursor: pointer;
+}
+.markdown-content li.task-item-done {
+  @apply text-neutral-400 dark:text-neutral-500;
+  text-decoration: line-through;
 }
 .markdown-content strong {
   font-weight: 600;

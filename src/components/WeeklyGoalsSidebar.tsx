@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { renderMarkdown } from '../lib/markdown'
+import { renderMarkdown, toggleMarkdownCheckbox } from '../lib/markdown'
 import type { DateKey } from '../types'
 
 interface WeeklyGoalsSidebarProps {
@@ -54,6 +54,17 @@ export function WeeklyGoalsSidebar({ weekStart, weekLabel, goals, onSaveGoals, e
   function handleSave() {
     onSaveGoals(draft)
     setIsEditing(false)
+  }
+
+  // Clicking a rendered task-list checkbox toggles it straight in the saved markdown, no need to
+  // go through Edit/Save — this only listens for checkbox clicks, everything else in the rendered
+  // markdown (links, text, ...) is unaffected.
+  function handleContentClick(event: React.MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement
+    if (target.tagName !== 'INPUT' || (target as HTMLInputElement).type !== 'checkbox') return
+    const indexAttr = target.getAttribute('data-task-index')
+    if (indexAttr === null) return
+    onSaveGoals(toggleMarkdownCheckbox(goals, Number(indexAttr)))
   }
 
   if (!expanded) {
@@ -136,6 +147,7 @@ export function WeeklyGoalsSidebar({ weekStart, weekLabel, goals, onSaveGoals, e
       ) : hasGoals ? (
         <div
           className="markdown-content min-h-0 flex-1 overflow-y-auto text-sm text-neutral-800 dark:text-neutral-200"
+          onClick={handleContentClick}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(goals) }}
         />
       ) : (
