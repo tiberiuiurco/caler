@@ -1,93 +1,112 @@
-import { useMemo, useRef, useState } from 'react'
-import { usePlannerStore } from '../store/plannerStore'
-import { TaskBlock } from './TaskBlock'
-import { HOUR_HEIGHT, SNAP_HOURS, TOTAL_HOURS } from '../lib/constants'
-import { todayKey } from '../lib/date'
-import { layoutTasks } from '../lib/layout'
-import type { DateKey, DayRange, Task } from '../types'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePlannerStore } from "../store/plannerStore";
+import { TaskBlock } from "./TaskBlock";
+import { HOUR_HEIGHT, SNAP_HOURS, TOTAL_HOURS } from "../lib/constants";
+import { todayKey } from "../lib/date";
+import { layoutTasks } from "../lib/layout";
+import type { DateKey, DayRange, Task } from "../types";
 
 interface CalendarColumnProps {
-  date: DateKey
-  range?: DayRange
-  tasks: Task[]
-  selectedTaskId: string | null
-  onSelectTask: (task: Task) => void
-  onTaskMoved?: (task: Task, newDate: DateKey, newStart: number) => void
+  date: DateKey;
+  range?: DayRange;
+  tasks: Task[];
+  selectedTaskId: string | null;
+  onSelectTask: (task: Task) => void;
+  onTaskMoved?: (task: Task, newDate: DateKey, newStart: number) => void;
 }
 
 interface Selection {
-  startHour: number
-  endHour: number
+  startHour: number;
+  endHour: number;
 }
 
 function clampHour(hour: number): number {
-  return Math.min(TOTAL_HOURS, Math.max(0, hour))
+  return Math.min(TOTAL_HOURS, Math.max(0, hour));
 }
 
 function snapHour(hour: number): number {
-  return Math.round(hour / SNAP_HOURS) * SNAP_HOURS
+  return Math.round(hour / SNAP_HOURS) * SNAP_HOURS;
 }
 
 /** A single day's hour-by-hour column: renders tasks and supports click-drag task creation. */
-export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTask, onTaskMoved }: CalendarColumnProps) {
-  const addTask = usePlannerStore((state) => state.addTask)
-  const dragPreview = usePlannerStore((state) => state.dragPreview)
-  const columnRef = useRef<HTMLDivElement>(null)
-  const [selection, setSelection] = useState<Selection | null>(null)
-  const [draft, setDraft] = useState<{ start: number; duration: number } | null>(null)
-  const [draftValue, setDraftValue] = useState('')
+export function CalendarColumn({
+  date,
+  range,
+  tasks,
+  selectedTaskId,
+  onSelectTask,
+  onTaskMoved,
+}: CalendarColumnProps) {
+  const addTask = usePlannerStore((state) => state.addTask);
+  const dragPreview = usePlannerStore((state) => state.dragPreview);
+  const columnRef = useRef<HTMLDivElement>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [draft, setDraft] = useState<{
+    start: number;
+    duration: number;
+  } | null>(null);
+  const [draftValue, setDraftValue] = useState("");
+  const [now, setNow] = useState(() => new Date());
 
-  const layout = useMemo(() => layoutTasks(tasks), [tasks])
-  const incomingPreview = dragPreview && dragPreview.date === date ? dragPreview : null
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const layout = useMemo(() => layoutTasks(tasks), [tasks]);
+  const incomingPreview =
+    dragPreview && dragPreview.date === date ? dragPreview : null;
 
   function hourFromClientY(clientY: number): number {
-    const rect = columnRef.current!.getBoundingClientRect()
-    return clampHour((clientY - rect.top) / HOUR_HEIGHT)
+    const rect = columnRef.current!.getBoundingClientRect();
+    return clampHour((clientY - rect.top) / HOUR_HEIGHT);
   }
 
   function handleMouseDown(event: React.MouseEvent) {
-    if (event.button !== 0 || draft) return
-    const startHour = snapHour(hourFromClientY(event.clientY))
-    setSelection({ startHour, endHour: startHour })
+    if (event.button !== 0 || draft) return;
+    const startHour = snapHour(hourFromClientY(event.clientY));
+    setSelection({ startHour, endHour: startHour });
 
     function handleMouseMove(moveEvent: MouseEvent) {
-      const endHour = snapHour(hourFromClientY(moveEvent.clientY))
-      setSelection((current) => (current ? { ...current, endHour } : current))
+      const endHour = snapHour(hourFromClientY(moveEvent.clientY));
+      setSelection((current) => (current ? { ...current, endHour } : current));
     }
     function handleMouseUp(upEvent: MouseEvent) {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-      const endHour = snapHour(hourFromClientY(upEvent.clientY))
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      const endHour = snapHour(hourFromClientY(upEvent.clientY));
       setSelection((current) => {
-        if (!current) return null
-        const start = Math.min(current.startHour, endHour)
-        const end = Math.max(current.startHour, endHour)
-        const duration = Math.max(SNAP_HOURS, end - start)
-        setDraft({ start, duration })
-        setDraftValue(`${duration} `)
-        return null
-      })
+        if (!current) return null;
+        const start = Math.min(current.startHour, endHour);
+        const end = Math.max(current.startHour, endHour);
+        const duration = Math.max(SNAP_HOURS, end - start);
+        setDraft({ start, duration });
+        setDraftValue(`${duration} `);
+        return null;
+      });
     }
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   }
 
   function commitDraft(input: string) {
-    const match = /^\s*(\d+(?:\.\d+)?)\s+(.+?)\s*$/.exec(input)
+    const match = /^\s*(\d+(?:\.\d+)?)\s+(.+?)\s*$/.exec(input);
     if (draft && match) {
-      addTask(date, draft.start, Number.parseFloat(match[1]), match[2])
+      addTask(date, draft.start, Number.parseFloat(match[1]), match[2]);
     }
-    setDraft(null)
+    setDraft(null);
   }
 
   const visibleSelection =
     selection && Math.abs(selection.endHour - selection.startHour) > 0.01
-      ? { start: Math.min(selection.startHour, selection.endHour), end: Math.max(selection.startHour, selection.endHour) }
-      : null
+      ? {
+          start: Math.min(selection.startHour, selection.endHour),
+          end: Math.max(selection.startHour, selection.endHour),
+        }
+      : null;
 
-  const isToday = date === todayKey()
-  const now = new Date()
-  const nowHour = now.getHours() + now.getMinutes() / 60
+  const isToday = date === todayKey();
+  const nowHour = now.getHours() + now.getMinutes() / 60;
 
   return (
     <div
@@ -108,12 +127,19 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
       {range && (
         <div
           className="absolute inset-x-0 bg-neutral-50 dark:bg-neutral-900/40"
-          style={{ top: range.start * HOUR_HEIGHT, height: (range.end - range.start) * HOUR_HEIGHT, zIndex: 0 }}
+          style={{
+            top: range.start * HOUR_HEIGHT,
+            height: (range.end - range.start) * HOUR_HEIGHT,
+            zIndex: 0,
+          }}
         />
       )}
 
       {isToday && nowHour >= 0 && nowHour <= TOTAL_HOURS && (
-        <div className="absolute inset-x-0 z-20 flex items-center" style={{ top: nowHour * HOUR_HEIGHT }}>
+        <div
+          className="absolute inset-x-0 z-20 flex items-center"
+          style={{ top: nowHour * HOUR_HEIGHT }}
+        >
           <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
           <div className="h-px flex-1 bg-red-500" />
         </div>
@@ -122,22 +148,29 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
       {visibleSelection && (
         <div
           className="absolute inset-x-1 rounded-lg border-2 border-dashed border-neutral-400 bg-neutral-200/40 dark:border-neutral-500 dark:bg-neutral-700/30"
-          style={{ top: visibleSelection.start * HOUR_HEIGHT, height: (visibleSelection.end - visibleSelection.start) * HOUR_HEIGHT }}
+          style={{
+            top: visibleSelection.start * HOUR_HEIGHT,
+            height:
+              (visibleSelection.end - visibleSelection.start) * HOUR_HEIGHT,
+          }}
         />
       )}
 
       {incomingPreview && (
         <div
           className="pointer-events-none absolute inset-x-1 z-20 rounded-lg border-2 border-dashed border-sky-400 bg-sky-200/30 dark:border-sky-500 dark:bg-sky-500/20"
-          style={{ top: incomingPreview.start * HOUR_HEIGHT, height: incomingPreview.duration * HOUR_HEIGHT }}
+          style={{
+            top: incomingPreview.start * HOUR_HEIGHT,
+            height: incomingPreview.duration * HOUR_HEIGHT,
+          }}
         />
       )}
 
       {draft && (
         <form
           onSubmit={(event) => {
-            event.preventDefault()
-            commitDraft(draftValue)
+            event.preventDefault();
+            commitDraft(draftValue);
           }}
           className="absolute inset-x-1 z-30 rounded-lg border border-neutral-300 bg-white p-1.5 shadow-lg dark:border-neutral-600 dark:bg-neutral-800"
           style={{ top: draft.start * HOUR_HEIGHT }}
@@ -148,7 +181,7 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
             onChange={(event) => setDraftValue(event.target.value)}
             onBlur={() => setDraft(null)}
             onKeyDown={(event) => {
-              if (event.key === 'Escape') setDraft(null)
+              if (event.key === "Escape") setDraft(null);
             }}
             placeholder="DURATION TEXT, e.g. 1.5 Write report"
             className="w-full bg-transparent text-xs outline-none"
@@ -157,7 +190,7 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
       )}
 
       {tasks.map((task) => {
-        const taskLayout = layout.get(task.id) ?? { left: 0, width: 100 }
+        const taskLayout = layout.get(task.id) ?? { left: 0, width: 100 };
         return (
           <TaskBlock
             key={task.id}
@@ -168,8 +201,8 @@ export function CalendarColumn({ date, range, tasks, selectedTaskId, onSelectTas
             left={taskLayout.left}
             width={taskLayout.width}
           />
-        )
+        );
       })}
     </div>
-  )
+  );
 }
