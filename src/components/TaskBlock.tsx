@@ -156,9 +156,13 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
         className={`group absolute flex flex-col overflow-hidden rounded-lg border px-2 py-1 text-left transition ${
           dragGhost ? 'cursor-grabbing' : 'cursor-grab'
         } ${
-          selected
-            ? 'z-10 border-neutral-900 bg-neutral-900 text-white shadow-md dark:border-white dark:bg-white dark:text-neutral-900'
-            : 'border-sky-200 bg-sky-50 text-sky-900 hover:border-sky-300 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-100'
+          task.isDeepWork
+            ? selected
+              ? 'z-10 border-amber-500 bg-amber-400 text-amber-950 shadow-md dark:border-amber-400 dark:bg-amber-500 dark:text-amber-950'
+              : 'border-amber-300 bg-amber-100 text-amber-900 hover:border-amber-400 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-100'
+            : selected
+              ? 'z-10 border-neutral-900 bg-neutral-900 text-white shadow-md dark:border-white dark:bg-white dark:text-neutral-900'
+              : 'border-sky-200 bg-sky-50 text-sky-900 hover:border-sky-300 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-100'
         }`}
       >
         <span className="truncate text-xs font-medium">{task.title || 'Untitled task'}</span>

@@ -10,6 +10,8 @@ export interface Task {
   duration: number
   title: string
   description: string
+  /** Marks this task as a focused Deep Work session, shown with a distinct highlight color. */
+  isDeepWork: boolean
 }
 
 export interface DayRange {

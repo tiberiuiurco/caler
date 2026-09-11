@@ -90,6 +90,16 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
       </div>
       <p className="-mt-2 text-xs text-neutral-400 dark:text-neutral-500">{task.duration}h duration</p>
 
+      <label className="flex items-center gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/30">
+        <input
+          type="checkbox"
+          checked={task.isDeepWork}
+          onChange={(event) => updateTask(task.id, task.date, { isDeepWork: event.target.checked })}
+          className="size-4 rounded border-amber-300 text-amber-500 focus:ring-amber-400 dark:border-amber-700"
+        />
+        <span className="text-sm font-medium text-amber-900 dark:text-amber-100">Deep work session</span>
+      </label>
+
       <button
         type="button"
         onClick={() => {

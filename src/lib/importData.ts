@@ -34,7 +34,7 @@ function parseRange(value: unknown): DayRange | null {
 
 function parseTask(value: unknown, fallbackDate: DateKey): Task | null {
   if (!isPlainObject(value)) return null
-  const { id, date, start, duration, title, description } = value
+  const { id, date, start, duration, title, description, isDeepWork } = value
   if (typeof id !== 'string' || typeof title !== 'string') return null
   if (!isFiniteNumber(start) || !isFiniteNumber(duration)) return null
   return {
@@ -44,6 +44,7 @@ function parseTask(value: unknown, fallbackDate: DateKey): Task | null {
     duration,
     title,
     description: typeof description === 'string' ? description : '',
+    isDeepWork: typeof isDeepWork === 'boolean' ? isDeepWork : false,
   }
 }
 

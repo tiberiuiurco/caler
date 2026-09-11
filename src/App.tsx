@@ -271,11 +271,11 @@ export default function App() {
     return (tasks[date] ?? []).reduce((max, task) => Math.max(max, task.start + task.duration), 0)
   }
 
-  function handleQuickAddSubmit(duration: number, title: string) {
+  function handleQuickAddSubmit(duration: number, title: string, isDeepWork: boolean) {
     if (!quickAddRange) return
     const cursor = Math.max(quickAddCursor[quickAddDate] ?? quickAddRange.start, lastTaskEndFor(quickAddDate))
     // A bare duration with no title just skips that stretch of time, no task is created.
-    if (title.trim() !== '') addTask(quickAddDate, cursor, duration, title)
+    if (title.trim() !== '') addTask(quickAddDate, cursor, duration, title, isDeepWork)
     const next = cursor + duration
     setQuickAddCursor(quickAddDate, next)
     setQuickAddValue('')

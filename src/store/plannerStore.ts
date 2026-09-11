@@ -20,8 +20,8 @@ export interface PlannerState {
 
   toggleTheme: () => void
   setRange: (date: DateKey, range: DayRange) => void
-  addTask: (date: DateKey, start: number, duration: number, title: string) => Task
-  updateTask: (id: string, date: DateKey, patch: Partial<Pick<Task, 'title' | 'description' | 'start' | 'duration'>>) => void
+  addTask: (date: DateKey, start: number, duration: number, title: string, isDeepWork?: boolean) => Task
+  updateTask: (id: string, date: DateKey, patch: Partial<Pick<Task, 'title' | 'description' | 'start' | 'duration' | 'isDeepWork'>>) => void
   /** Moves a task to `toDate`/`patch.start` (and optionally a new duration), reparenting it between days when `toDate` differs from `fromDate`. */
   moveTask: (id: string, fromDate: DateKey, toDate: DateKey, patch: { start: number; duration?: number }) => void
   deleteTask: (id: string, date: DateKey) => void
@@ -57,8 +57,8 @@ export const usePlannerStore = create<PlannerState>()(
           quickAddCursor: { ...state.quickAddCursor, [date]: range.start },
         })),
 
-      addTask: (date, start, duration, title) => {
-        const task: Task = { id: createId(), date, start: snap(start), duration: snap(duration), title, description: '' }
+      addTask: (date, start, duration, title, isDeepWork = false) => {
+        const task: Task = { id: createId(), date, start: snap(start), duration: snap(duration), title, description: '', isDeepWork }
         set((state) => ({
           tasks: { ...state.tasks, [date]: [...(state.tasks[date] ?? []), task] },
         }))
