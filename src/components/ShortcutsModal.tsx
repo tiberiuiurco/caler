@@ -17,6 +17,10 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: 'Esc', description: 'Close a dialog or deselect the current task' },
 ]
 
+const BEHAVIORS: string[] = [
+  'Add "dw" to either end of a task\'s text (quick-add or drag-create) to mark it Deep Work — shown in yellow. Toggle it anytime from the task sidebar.',
+]
+
 /** Full-screen overlay listing all global keyboard shortcuts. Escape or the backdrop closes it. */
 export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
   useEffect(() => {
@@ -47,6 +51,13 @@ export function ShortcutsModal({ onClose }: ShortcutsModalProps) {
             </div>
           ))}
         </dl>
+
+        <h2 className="mt-5 text-base font-semibold text-neutral-900 dark:text-neutral-100">Behaviors</h2>
+        <ul className="mt-3 space-y-2 text-sm text-neutral-500 dark:text-neutral-400">
+          {BEHAVIORS.map((behavior) => (
+            <li key={behavior}>{behavior}</li>
+          ))}
+        </ul>
       </div>
     </div>
   )
