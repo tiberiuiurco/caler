@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Header } from './components/Header'
 import { RangeModal } from './components/RangeModal'
 import { JumpToDateModal } from './components/JumpToDateModal'
+import { ShortcutsModal } from './components/ShortcutsModal'
+import { SettingsPage } from './components/SettingsPage'
 import { QuickAddBar } from './components/QuickAddBar'
 import { TaskSidebar } from './components/TaskSidebar'
 import { ConfirmDialog } from './components/ConfirmDialog'
@@ -49,6 +51,8 @@ export default function App() {
   const [dayLeftDate, setDayLeftDate] = useState<DateKey>(shiftKey(today, -1))
   const [dayRightDate, setDayRightDate] = useState<DateKey>(today)
   const [jumpDateOpen, setJumpDateOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   // Which date the quick-add bar is currently filling. Defaults to today; paging/jumping the day
   // view or clicking a date's header in week view retargets it instead.
   const [quickAddDate, setQuickAddDate] = useState<DateKey>(today)
@@ -155,7 +159,7 @@ export default function App() {
       // Up/Down always navigate tasks, even while typing, except inside multi-line text or time
       // steppers where the arrow keys have their own native meaning.
       if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isTextarea && !isTimeInput) {
-        if (confirmDeleteTarget || abandonEntryPending || jumpDateOpen) return
+        if (confirmDeleteTarget || abandonEntryPending || jumpDateOpen || settingsOpen) return
         const direction = event.key === 'ArrowUp' ? -1 : 1
         const isQuickAddField = target.getAttribute('data-nav-guard') === 'quickadd'
         event.preventDefault()
@@ -167,7 +171,7 @@ export default function App() {
         return
       }
 
-      if (isTyping || confirmDeleteTarget || abandonEntryPending || jumpDateOpen) return
+      if (isTyping || confirmDeleteTarget || abandonEntryPending || jumpDateOpen || settingsOpen) return
 
       if (event.key === 'Escape') {
         if (selectedTask) setSelected(null)
@@ -200,6 +204,11 @@ export default function App() {
       if (event.key === 'j' || event.key === 'J') {
         event.preventDefault()
         setJumpDateOpen(true)
+        return
+      }
+      if (event.key === ',') {
+        event.preventDefault()
+        setSettingsOpen(true)
         return
       }
       if (event.key === 'x' || event.key === 'X') {
@@ -244,6 +253,7 @@ export default function App() {
     confirmDeleteTarget,
     abandonEntryPending,
     jumpDateOpen,
+    settingsOpen,
     today,
     pageDayView,
     focusDayView,
@@ -253,9 +263,17 @@ export default function App() {
     quickAddActive,
   ])
 
+  // The tracked quick-add cursor only advances when a task is added/skipped through the
+  // composer itself, so it goes stale whenever a task is created some other way (click-drag,
+  // editing, data loaded from storage). Taking the max with the actual last task end time lets
+  // it self-heal in that case while still preserving in-session "skip ahead" behavior.
+  function lastTaskEndFor(date: DateKey) {
+    return (tasks[date] ?? []).reduce((max, task) => Math.max(max, task.start + task.duration), 0)
+  }
+
   function handleQuickAddSubmit(duration: number, title: string) {
     if (!quickAddRange) return
-    const cursor = quickAddCursor[quickAddDate] ?? quickAddRange.start
+    const cursor = Math.max(quickAddCursor[quickAddDate] ?? quickAddRange.start, lastTaskEndFor(quickAddDate))
     // A bare duration with no title just skips that stretch of time, no task is created.
     if (title.trim() !== '') addTask(quickAddDate, cursor, duration, title)
     const next = cursor + duration
@@ -285,13 +303,19 @@ export default function App() {
   const goalsWeek = weekKeys(goalsWeekAnchor)
   const goalsWeekLabel = formatWeekRangeLabel(goalsWeek[0], goalsWeek[6])
 
-  const cursor = quickAddCursor[quickAddDate] ?? quickAddRange?.start ?? 0
+  const cursor = Math.max(quickAddCursor[quickAddDate] ?? quickAddRange?.start ?? 0, lastTaskEndFor(quickAddDate))
   const showContinueButton = Boolean(quickAddRange) && !quickAddActive && cursor < (quickAddRange?.end ?? 0)
   const quickAddDateLabel = quickAddDate === today ? undefined : formatDayLabel(quickAddDate)
 
   return (
     <div className="flex h-screen flex-col">
-      {!quickAddRange && <RangeModal dateLabel={quickAddDateLabel} onConfirm={(start, end) => setRange(quickAddDate, { start, end })} />}
+      {!quickAddRange && (
+        <RangeModal
+          dateLabel={quickAddDateLabel}
+          onConfirm={(start, end) => setRange(quickAddDate, { start, end })}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
+      )}
 
       {jumpDateOpen && (
         <JumpToDateModal
@@ -303,6 +327,8 @@ export default function App() {
           onCancel={() => setJumpDateOpen(false)}
         />
       )}
+
+      {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
 
       {confirmDeleteTarget && (
         <ConfirmDialog
@@ -340,8 +366,18 @@ export default function App() {
         onViewModeChange={handleViewModeChange}
         weekAnchor={weekAnchor}
         onWeekAnchorChange={setWeekAnchor}
-        onExport={() => exportPlannerData({ ranges, tasks, weeklyGoals })}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onShowShortcuts={() => setShortcutsOpen(true)}
       />
+
+      {settingsOpen && (
+        <SettingsPage
+          onClose={() => setSettingsOpen(false)}
+          onExport={() => exportPlannerData({ ranges, tasks, weeklyGoals })}
+          onImport={(data, mode) => usePlannerStore.getState().importData(data, mode)}
+          onEraseAll={() => usePlannerStore.getState().clearAllData()}
+        />
+      )}
 
       {quickAddRange && quickAddActive && (
         <QuickAddBar

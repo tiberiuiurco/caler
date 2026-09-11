@@ -4,11 +4,12 @@ interface RangeModalProps {
   /** When set, the modal is for a date other than today (e.g. picked in week view) and shows it explicitly. */
   dateLabel?: string
   onConfirm: (start: number, end: number) => void
+  onOpenSettings?: () => void
 }
 
 const RANGE_PATTERN = /^\s*(\d{1,2}(?:\.\d+)?)\s*-\s*(\d{1,2}(?:\.\d+)?)\s*$/
 
-export function RangeModal({ dateLabel, onConfirm }: RangeModalProps) {
+export function RangeModal({ dateLabel, onConfirm, onOpenSettings }: RangeModalProps) {
   const [value, setValue] = useState('5-21')
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -62,6 +63,15 @@ export function RangeModal({ dateLabel, onConfirm }: RangeModalProps) {
         >
           Start planning
         </button>
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="mt-3 w-full text-center text-xs text-neutral-400 underline-offset-2 transition hover:text-neutral-600 hover:underline dark:text-neutral-500 dark:hover:text-neutral-300"
+          >
+            or import existing data
+          </button>
+        )}
       </form>
     </div>
   )

@@ -3,9 +3,9 @@
 
 A very fast, minimalist daily planner built around the *time-blocking*
 philosophy. Single-user, no login, no backend — everything lives in your
-browser's ~localStorage~ and can be exported to JSON at any time. Ships as a
-static site, so it can be dropped straight onto GitHub Pages (or any static
-host).
+browser's ~localStorage~, with a Settings page to export, import, or erase it
+at any time. Ships as a static site, so it can be dropped straight onto
+GitHub Pages (or any static host).
 
 * Features
 
@@ -28,7 +28,8 @@ host).
   that day's active hours first if needed, then reuses the same sequential
   quick-add flow.
 - Light/dark theme, toggleable and persisted.
-- Export all data as a JSON file.
+- Settings page (gear icon, or ~,~) to export all data as a JSON file, import a
+  previous export back in (replace or merge), or erase everything.
 - A keyboard-first flow throughout — see [[#keyboard-shortcuts][Keyboard shortcuts]].
 
 * Getting started
@@ -98,18 +99,20 @@ src/
 │   ├── date.ts            Date-key <-> Date conversions, formatting, week math
 │   ├── parseEntry.ts      Parses "DURATION TEXT" quick-add syntax (bare DURATION = skip)
 │   ├── exportData.ts      Serializes the store to a downloadable JSON file
+│   ├── importData.ts      Validates a JSON export and merges/replaces it into the store
 │   └── id.ts              UUID generation for new tasks
 ├── hooks/
 │   ├── useTheme.ts             Syncs the store's theme with the <html> class
 │   └── useDoubleRightClick.ts  Detects two right-clicks within a short window
 ├── components/
-│   ├── Header.tsx          View switcher, week navigation, export, theme toggle
+│   ├── Header.tsx          View switcher, week navigation, settings, theme toggle
 │   ├── RangeModal.tsx       First-open prompt for today's active hour range
 │   ├── JumpToDateModal.tsx  "j" prompt: parses "MM/DD" into a full date
 │   ├── QuickAddBar.tsx      Sequential "DURATION TEXT" entry, auto-refocusing (bare DURATION skips)
 │   ├── CalendarGrid.tsx     Shared hour-ruler + column layout (day or week)
 │   ├── CalendarColumn.tsx   One day's column: grid lines, drag-to-create, tasks
 │   ├── TaskBlock.tsx        A single task: resize handle, delete-on-dbl-right-click
+│   ├── SettingsPage.tsx     Export / import (replace or merge) / erase-all, each confirmed
 │   ├── TaskSidebar.tsx      Edit title/description/start/end for the selected task
 │   ├── ConfirmDialog.tsx    Generic Enter/Escape confirmation modal
 │   └── ThemeToggle.tsx      Light/dark switch

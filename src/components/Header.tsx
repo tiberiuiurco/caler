@@ -7,10 +7,18 @@ interface HeaderProps {
   onViewModeChange: (mode: 'day' | 'week') => void
   weekAnchor: DateKey
   onWeekAnchorChange: (key: DateKey) => void
-  onExport: () => void
+  onOpenSettings: () => void
+  onShowShortcuts: () => void
 }
 
-export function Header({ viewMode, onViewModeChange, weekAnchor, onWeekAnchorChange, onExport }: HeaderProps) {
+export function Header({
+  viewMode,
+  onViewModeChange,
+  weekAnchor,
+  onWeekAnchorChange,
+  onOpenSettings,
+  onShowShortcuts,
+}: HeaderProps) {
   const week = weekKeys(weekAnchor)
 
   return (
@@ -69,11 +77,21 @@ export function Header({ viewMode, onViewModeChange, weekAnchor, onWeekAnchorCha
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
-          onClick={onExport}
-          title="Export all data as JSON"
-          className="rounded-full border border-neutral-200 px-3 py-1.5 text-sm text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          onClick={onOpenSettings}
+          aria-label="Settings"
+          title="Settings"
+          className="grid size-7 shrink-0 place-items-center rounded-full border border-neutral-200 text-sm text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800"
         >
-          Export
+          ⚙
+        </button>
+        <button
+          type="button"
+          onClick={onShowShortcuts}
+          aria-label="Show keyboard shortcuts"
+          title="Keyboard shortcuts"
+          className="grid size-7 shrink-0 place-items-center rounded-full border border-neutral-200 text-sm text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-800"
+        >
+          ?
         </button>
         <ThemeToggle />
       </div>

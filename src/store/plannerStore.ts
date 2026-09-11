@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { DateKey, DayRange, DragPreview, Task, Theme } from '../types'
 import { LOCAL_STORAGE_KEY, SNAP_HOURS } from '../lib/constants'
 import { createId } from '../lib/id'
+import { mergePlannerData, type ParsedPlannerData } from '../lib/importData'
 
 export interface PlannerState {
   theme: Theme
@@ -28,7 +29,8 @@ export interface PlannerState {
   setDragPreview: (preview: DragPreview | null) => void
   setWeeklyGoals: (weekStart: DateKey, markdown: string) => void
   setWeeklyGoalsExpanded: (expanded: boolean) => void
-  importData: (data: { ranges: Record<DateKey, DayRange>; tasks: Record<DateKey, Task[]>; weeklyGoals?: Record<DateKey, string> }) => void
+  importData: (data: ParsedPlannerData, mode: 'replace' | 'merge') => void
+  clearAllData: () => void
 }
 
 function snap(value: number): number {
@@ -121,7 +123,28 @@ export const usePlannerStore = create<PlannerState>()(
 
       setWeeklyGoalsExpanded: (expanded) => set({ weeklyGoalsExpanded: expanded }),
 
-      importData: (data) => set({ ranges: data.ranges, tasks: data.tasks, weeklyGoals: data.weeklyGoals ?? {} }),
+      importData: (data, mode) =>
+        set((state) => {
+          const snapped: ParsedPlannerData = {
+            ranges: data.ranges,
+            weeklyGoals: data.weeklyGoals,
+            tasks: Object.fromEntries(
+              Object.entries(data.tasks).map(([date, tasks]) => [
+                date,
+                tasks.map((task) => ({ ...task, start: snap(task.start), duration: snap(task.duration) })),
+              ]),
+            ),
+          }
+
+          const merged =
+            mode === 'merge'
+              ? mergePlannerData({ ranges: state.ranges, tasks: state.tasks, weeklyGoals: state.weeklyGoals }, snapped)
+              : snapped
+
+          return { ranges: merged.ranges, tasks: merged.tasks, weeklyGoals: merged.weeklyGoals, quickAddCursor: {} }
+        }),
+
+      clearAllData: () => set({ ranges: {}, tasks: {}, weeklyGoals: {}, quickAddCursor: {} }),
     }),
     {
       name: LOCAL_STORAGE_KEY,

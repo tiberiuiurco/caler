@@ -2,7 +2,7 @@
 
 A fast, minimal daily planner built around the time-blocking philosophy.
 Single-user, no login, no backend — every plan lives in your browser's
-`localStorage` and can be exported to JSON at any time.
+`localStorage`, with a Settings page to export, import, or erase it at any time.
 
 ## Stack
 
@@ -36,7 +36,9 @@ Single-user, no login, no backend — every plan lives in your browser's
    to next year's occurrence instead of the past) and it shows `Today | that
    date`, prompting for its active hours and dropping into quick-add just like
    any other day.
-7. **Export** in the header downloads all ranges/tasks/weekly goals as a JSON file.
+7. **Settings** (the gear in the header, or `,`) opens a page to export all ranges/tasks/weekly
+   goals as a JSON file, import a previous export back in (replacing or merging with what's
+   there), or erase all data — each destructive action behind a confirmation.
 8. A **Weekly goals** panel sits on the far right, expanded by default and collapsible to a thin
    strip (click the arrow, like a browser's vertical tab bar). It shows that week's goals rendered
    as Markdown; click **Edit** (or **+ Add goals** when empty) to write them, then **Save** or
