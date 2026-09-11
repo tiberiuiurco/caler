@@ -4,6 +4,7 @@ import { TaskBlock } from "./TaskBlock";
 import { HOUR_HEIGHT, SNAP_HOURS, TOTAL_HOURS } from "../lib/constants";
 import { todayKey } from "../lib/date";
 import { layoutTasks } from "../lib/layout";
+import { parseEntry } from "../lib/parseEntry";
 import type { DateKey, DayRange, Task } from "../types";
 
 interface CalendarColumnProps {
@@ -90,9 +91,9 @@ export function CalendarColumn({
   }
 
   function commitDraft(input: string) {
-    const match = /^\s*(\d+(?:\.\d+)?)\s+(.+?)\s*$/.exec(input);
-    if (draft && match) {
-      addTask(date, draft.start, Number.parseFloat(match[1]), match[2]);
+    const parsed = parseEntry(input);
+    if (draft && parsed && !parsed.isSkip) {
+      addTask(date, draft.start, parsed.duration, parsed.title, parsed.isDeepWork);
     }
     setDraft(null);
   }
@@ -183,7 +184,7 @@ export function CalendarColumn({
             onKeyDown={(event) => {
               if (event.key === "Escape") setDraft(null);
             }}
-            placeholder="DURATION TEXT, e.g. 1.5 Write report"
+            placeholder='DURATION TEXT, e.g. "1.5 Write report" (add "dw" at either end for Deep Work)'
             className="w-full bg-transparent text-xs outline-none"
           />
         </form>
