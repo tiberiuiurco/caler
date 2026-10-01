@@ -7,7 +7,8 @@ import { SettingsPage } from './components/SettingsPage'
 import { QuickAddBar } from './components/QuickAddBar'
 import { TaskSidebar } from './components/TaskSidebar'
 import { ConfirmDialog } from './components/ConfirmDialog'
-import { CalendarGrid, type CalendarColumnData } from './components/CalendarGrid'
+import { CalendarGrid, type CalendarColumnData, type DayAction } from './components/CalendarGrid'
+import { TrashIcon } from './components/icons'
 import { usePlannerStore } from './store/plannerStore'
 import { useTheme } from './hooks/useTheme'
 import { exportPlannerData } from './lib/exportData'
@@ -15,6 +16,7 @@ import { WeeklyGoalsSidebar } from './components/WeeklyGoalsSidebar'
 import {
   dayColumnLabel,
   daysFromKey,
+  describeDay,
   formatDayLabel,
   formatWeekRangeLabel,
   formatWeekdayShort,
@@ -25,6 +27,10 @@ import {
   weekStartKey,
 } from './lib/date'
 import type { DateKey, Task } from './types'
+
+function pluralizeEntries(count: number): string {
+  return count === 1 ? '1 entry' : `All ${count} entries`
+}
 
 export default function App() {
   useTheme()
@@ -37,6 +43,7 @@ export default function App() {
   const setRange = usePlannerStore((state) => state.setRange)
   const addTask = usePlannerStore((state) => state.addTask)
   const deleteTask = usePlannerStore((state) => state.deleteTask)
+  const clearDay = usePlannerStore((state) => state.clearDay)
   const setQuickAddCursor = usePlannerStore((state) => state.setQuickAddCursor)
   const setWeeklyGoals = usePlannerStore((state) => state.setWeeklyGoals)
   const setWeeklyGoalsExpanded = usePlannerStore((state) => state.setWeeklyGoalsExpanded)
@@ -62,6 +69,10 @@ export default function App() {
   const [selected, setSelected] = useState<{ id: string; date: DateKey } | null>(null)
   const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ id: string; date: DateKey; title: string } | null>(null)
   const [abandonEntryPending, setAbandonEntryPending] = useState<{ direction: 1 | -1 } | null>(null)
+  const [clearDayTarget, setClearDayTarget] = useState<DateKey | null>(null)
+
+  // Any open dialog/overlay owns the keyboard, so global shortcuts stand down while one is up.
+  const isOverlayOpen = Boolean(confirmDeleteTarget || abandonEntryPending || clearDayTarget || jumpDateOpen || settingsOpen)
 
   // Points the day view at `left`/`right` and retargets quick-add planning at the newly focused
   // (right-hand) date, prompting for its active hours first if it doesn't have any yet.
@@ -159,7 +170,7 @@ export default function App() {
       // Up/Down always navigate tasks, even while typing, except inside multi-line text or time
       // steppers where the arrow keys have their own native meaning.
       if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isTextarea && !isTimeInput) {
-        if (confirmDeleteTarget || abandonEntryPending || jumpDateOpen || settingsOpen) return
+        if (isOverlayOpen) return
         const direction = event.key === 'ArrowUp' ? -1 : 1
         const isQuickAddField = target.getAttribute('data-nav-guard') === 'quickadd'
         event.preventDefault()
@@ -171,7 +182,7 @@ export default function App() {
         return
       }
 
-      if (isTyping || confirmDeleteTarget || abandonEntryPending || jumpDateOpen || settingsOpen) return
+      if (isTyping || isOverlayOpen) return
 
       if (event.key === 'Escape') {
         if (selectedTask) setSelected(null)
@@ -250,10 +261,7 @@ export default function App() {
     selectedTask,
     tasks,
     viewMode,
-    confirmDeleteTarget,
-    abandonEntryPending,
-    jumpDateOpen,
-    settingsOpen,
+    isOverlayOpen,
     today,
     pageDayView,
     focusDayView,
@@ -285,6 +293,18 @@ export default function App() {
   const dayColumns: CalendarColumnData[] = [
     { date: dayLeftDate, ...dayColumnLabel(daysFromKey(dayLeftDate, today), dayLeftDate), range: ranges[dayLeftDate], tasks: tasks[dayLeftDate] ?? [], muted: true },
     { date: dayRightDate, ...dayColumnLabel(daysFromKey(dayRightDate, today), dayRightDate), range: ranges[dayRightDate], tasks: tasks[dayRightDate] ?? [] },
+  ]
+
+  // Actions offered in the floating toolbar under each day's header. Add new per-day actions here.
+  const dayActions: DayAction[] = [
+    {
+      id: 'clear-day',
+      label: (column) => `Delete all entries for ${column.label}`,
+      icon: <TrashIcon />,
+      tone: 'danger',
+      isAvailable: (column) => column.tasks.length > 0,
+      onSelect: (column) => setClearDayTarget(column.date),
+    },
   ]
 
   const weekColumns: CalendarColumnData[] = weekKeys(weekAnchor).map((date) => ({
@@ -340,6 +360,20 @@ export default function App() {
             setConfirmDeleteTarget(null)
           }}
           onCancel={() => setConfirmDeleteTarget(null)}
+        />
+      )}
+
+      {clearDayTarget && (
+        <ConfirmDialog
+          title="Delete all entries?"
+          message={`${pluralizeEntries(tasks[clearDayTarget]?.length ?? 0)} for ${describeDay(clearDayTarget, today)} will be permanently deleted. This can't be undone.`}
+          confirmLabel="Delete all"
+          onConfirm={() => {
+            clearDay(clearDayTarget)
+            setSelected((current) => (current?.date === clearDayTarget ? null : current))
+            setClearDayTarget(null)
+          }}
+          onCancel={() => setClearDayTarget(null)}
         />
       )}
 
@@ -413,6 +447,7 @@ export default function App() {
           planningDate={viewMode === 'week' ? quickAddDate : null}
           onSelectPlanningDate={viewMode === 'week' ? handleSelectPlanningDate : undefined}
           onTaskMoved={handleTaskMoved}
+          dayActions={dayActions}
         />
         {selectedTask && <TaskSidebar task={selectedTask} onClose={() => setSelected(null)} />}
         <WeeklyGoalsSidebar

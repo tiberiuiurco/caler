@@ -85,6 +85,12 @@ export function dayColumnLabel(offset: number, key: DateKey): { label: string; s
   return relative ? { label: relative, sublabel: formatDayLabel(key) } : { label: formatDayLabel(key) }
 }
 
+/** Unambiguous name for a day in prose (e.g. confirmation dialogs): "Today (Thursday, Oct 1)" or just "Monday, Oct 5". */
+export function describeDay(key: DateKey, fromKey: DateKey): string {
+  const { label, sublabel } = dayColumnLabel(daysFromKey(key, fromKey), key)
+  return sublabel ? `${label} (${sublabel})` : label
+}
+
 export function formatWeekdayShort(key: DateKey): string {
   return format(keyToDate(key), 'EEE d')
 }

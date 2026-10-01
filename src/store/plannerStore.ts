@@ -25,6 +25,8 @@ export interface PlannerState {
   /** Moves a task to `toDate`/`patch.start` (and optionally a new duration), reparenting it between days when `toDate` differs from `fromDate`. */
   moveTask: (id: string, fromDate: DateKey, toDate: DateKey, patch: { start: number; duration?: number }) => void
   deleteTask: (id: string, date: DateKey) => void
+  /** Removes every task on `date` and rewinds its quick-add cursor to the start of the day's range. Other days are untouched. */
+  clearDay: (date: DateKey) => void
   setQuickAddCursor: (date: DateKey, cursor: number) => void
   setDragPreview: (preview: DragPreview | null) => void
   setWeeklyGoals: (weekStart: DateKey, markdown: string) => void
@@ -112,6 +114,13 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => ({
           tasks: { ...state.tasks, [date]: (state.tasks[date] ?? []).filter((task) => task.id !== id) },
         })),
+
+      clearDay: (date) =>
+        set((state) => {
+          const { [date]: _cleared, ...tasks } = state.tasks
+          const { [date]: _cursor, ...quickAddCursor } = state.quickAddCursor
+          return { tasks, quickAddCursor }
+        }),
 
       setQuickAddCursor: (date, cursor) =>
         set((state) => ({ quickAddCursor: { ...state.quickAddCursor, [date]: cursor } })),
