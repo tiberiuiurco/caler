@@ -45,6 +45,7 @@ export default function App() {
   const deleteTask = usePlannerStore((state) => state.deleteTask)
   const clearDay = usePlannerStore((state) => state.clearDay)
   const setQuickAddCursor = usePlannerStore((state) => state.setQuickAddCursor)
+  const resetQuickAddCursors = usePlannerStore((state) => state.resetQuickAddCursors)
   const setWeeklyGoals = usePlannerStore((state) => state.setWeeklyGoals)
   const setWeeklyGoalsExpanded = usePlannerStore((state) => state.setWeeklyGoalsExpanded)
 
@@ -63,7 +64,9 @@ export default function App() {
   // Which date the quick-add bar is currently filling. Defaults to today; paging/jumping the day
   // view or clicking a date's header in week view retargets it instead.
   const [quickAddDate, setQuickAddDate] = useState<DateKey>(today)
-  const [quickAddActive, setQuickAddActive] = useState(false)
+  // On app load, drop straight into the composer if today is already planned. Switching days
+  // never does this; the composer has to be toggled on (i / the button) for other dates.
+  const [quickAddActive, setQuickAddActive] = useState(() => Boolean(usePlannerStore.getState().ranges[today]))
   const [quickAddValue, setQuickAddValue] = useState('')
   const [quickAddFocusToken, setQuickAddFocusToken] = useState(0)
   const [selected, setSelected] = useState<{ id: string; date: DateKey } | null>(null)
@@ -71,26 +74,24 @@ export default function App() {
   const [abandonEntryPending, setAbandonEntryPending] = useState<{ direction: 1 | -1 } | null>(null)
   const [clearDayTarget, setClearDayTarget] = useState<DateKey | null>(null)
 
-  // Any open dialog/overlay owns the keyboard, so global shortcuts stand down while one is up.
-  const isOverlayOpen = Boolean(confirmDeleteTarget || abandonEntryPending || clearDayTarget || jumpDateOpen || settingsOpen)
-
   // Points the day view at `left`/`right` and retargets quick-add planning at the newly focused
-  // (right-hand) date, prompting for its active hours first if it doesn't have any yet.
+  // (right-hand) date. Switching days closes the composer; it's only reopened explicitly.
   const focusDayView = useCallback((left: DateKey, right: DateKey) => {
     setDayLeftDate(left)
     setDayRightDate(right)
     setQuickAddDate(right)
     setQuickAddValue('')
+    setQuickAddActive(false)
     setQuickAddFocusToken((token) => token + 1)
   }, [])
 
   const quickAddRange = ranges[quickAddDate]
+  // The day's active hours are only asked for when the composer is toggled on for a date that
+  // doesn't have them yet; confirming them drops straight into the composer.
+  const rangePromptOpen = quickAddActive && !quickAddRange
 
-  // As soon as the planning date's active range exists, drop straight into sequential quick-add.
-  const hasQuickAddRange = Boolean(quickAddRange)
-  useEffect(() => {
-    if (hasQuickAddRange) setQuickAddActive(true)
-  }, [hasQuickAddRange, quickAddDate])
+  // Any open dialog/overlay owns the keyboard, so global shortcuts stand down while one is up.
+  const isOverlayOpen = Boolean(confirmDeleteTarget || abandonEntryPending || clearDayTarget || jumpDateOpen || settingsOpen || rangePromptOpen)
 
   // Switching the view surface (either way: day<->week, via the header buttons or the q/e
   // shortcuts) always resets quick-add planning back to today, with a clean, empty draft.
@@ -121,8 +122,8 @@ export default function App() {
     [today, focusDayView],
   )
 
-  // Clicking a date's header in week view enables the same sequential quick-add flow day view
-  // gives today: prompting for an hour range first if that date doesn't have one yet.
+  // Clicking a date's header in week view retargets quick-add at that date, without opening the
+  // composer (toggling it on prompts for the date's hour range first if it doesn't have one yet).
   // Keeps the sidebar/selection pointed at a task after it's dragged to a different day.
   function handleTaskMoved(task: Task, newDate: DateKey) {
     setSelected((current) => (current && current.id === task.id ? { id: task.id, date: newDate } : current))
@@ -131,8 +132,8 @@ export default function App() {
   function handleSelectPlanningDate(date: DateKey) {
     setQuickAddDate(date)
     setQuickAddValue('')
+    setQuickAddActive(false)
     setQuickAddFocusToken((token) => token + 1)
-    if (ranges[date]) setQuickAddActive(true)
   }
 
   const selectedTask: Task | null = useMemo(() => {
@@ -204,11 +205,9 @@ export default function App() {
       // "+Continue adding tasks"). Once active the bar auto-focuses itself, so this can
       // only ever fire while it's off — typing "i" into the bar itself just types "i".
       if ((event.key === 'i' || event.key === 'I') && !quickAddActive) {
-        if (quickAddRange) {
-          event.preventDefault()
-          setQuickAddActive(true)
-          setQuickAddFocusToken((token) => token + 1)
-        }
+        event.preventDefault()
+        setQuickAddActive(true)
+        setQuickAddFocusToken((token) => token + 1)
         return
       }
       // Prompts for a "MM/DD" date and jumps the day view straight to it, paired with today.
@@ -271,6 +270,12 @@ export default function App() {
     quickAddActive,
   ])
 
+  // Skip-ahead gaps only last for one composer session: opening/closing it or retargeting another
+  // date drops them, so the composer always resumes from the day's real last task end.
+  useEffect(() => {
+    resetQuickAddCursors()
+  }, [quickAddActive, quickAddDate, resetQuickAddCursors])
+
   // The tracked quick-add cursor only advances when a task is added/skipped through the
   // composer itself, so it goes stale whenever a task is created some other way (click-drag,
   // editing, data loaded from storage). Taking the max with the actual last task end time lets
@@ -324,16 +329,23 @@ export default function App() {
   const goalsWeekLabel = formatWeekRangeLabel(goalsWeek[0], goalsWeek[6])
 
   const cursor = Math.max(quickAddCursor[quickAddDate] ?? quickAddRange?.start ?? 0, lastTaskEndFor(quickAddDate))
-  const showContinueButton = Boolean(quickAddRange) && !quickAddActive && cursor < (quickAddRange?.end ?? 0)
+  const showContinueButton = !quickAddActive && (!quickAddRange || cursor < quickAddRange.end)
   const quickAddDateLabel = quickAddDate === today ? undefined : formatDayLabel(quickAddDate)
 
   return (
     <div className="flex h-screen flex-col">
-      {!quickAddRange && (
+      {rangePromptOpen && (
         <RangeModal
           dateLabel={quickAddDateLabel}
-          onConfirm={(start, end) => setRange(quickAddDate, { start, end })}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onConfirm={(start, end) => {
+            setRange(quickAddDate, { start, end })
+            setQuickAddFocusToken((token) => token + 1)
+          }}
+          onCancel={() => setQuickAddActive(false)}
+          onOpenSettings={() => {
+            setQuickAddActive(false)
+            setSettingsOpen(true)
+          }}
         />
       )}
 
@@ -434,7 +446,7 @@ export default function App() {
             onClick={() => setQuickAddActive(true)}
             className="rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-sm text-neutral-500 transition hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
           >
-            + Continue adding tasks{quickAddDateLabel ? ` for ${quickAddDateLabel}` : ''}
+            + {quickAddRange ? 'Continue adding' : 'Add'} tasks{quickAddDateLabel ? ` for ${quickAddDateLabel}` : ''}
           </button>
         </div>
       )}

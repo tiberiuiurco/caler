@@ -4,12 +4,14 @@ interface RangeModalProps {
   /** When set, the modal is for a date other than today (e.g. picked in week view) and shows it explicitly. */
   dateLabel?: string
   onConfirm: (start: number, end: number) => void
+  /** Escape closes the prompt without setting a range. */
+  onCancel: () => void
   onOpenSettings?: () => void
 }
 
 const RANGE_PATTERN = /^\s*(\d{1,2}(?:\.\d+)?)\s*-\s*(\d{1,2}(?:\.\d+)?)\s*$/
 
-export function RangeModal({ dateLabel, onConfirm, onOpenSettings }: RangeModalProps) {
+export function RangeModal({ dateLabel, onConfirm, onCancel, onOpenSettings }: RangeModalProps) {
   const [value, setValue] = useState('5-21')
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -19,6 +21,14 @@ export function RangeModal({ dateLabel, onConfirm, onOpenSettings }: RangeModalP
     inputRef.current?.focus()
     inputRef.current?.select()
   }, [])
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()

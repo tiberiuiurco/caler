@@ -9,7 +9,11 @@ export interface PlannerState {
   theme: Theme
   ranges: Record<DateKey, DayRange>
   tasks: Record<DateKey, Task[]>
-  /** Hour cursor for sequential quick-add, per day. */
+  /**
+   * Hour cursor for sequential quick-add, per day. Only meaningful while the composer is open: it
+   * carries in-session "skip ahead" gaps, and is reset whenever the composer closes so it reopens
+   * from the real schedule. Not persisted.
+   */
   quickAddCursor: Record<DateKey, number>
   /** Live preview of a task currently being dragged, so any day column can render its drop target. */
   dragPreview: DragPreview | null
@@ -28,6 +32,8 @@ export interface PlannerState {
   /** Removes every task on `date` and rewinds its quick-add cursor to the start of the day's range. Other days are untouched. */
   clearDay: (date: DateKey) => void
   setQuickAddCursor: (date: DateKey, cursor: number) => void
+  /** Drops every tracked quick-add cursor, so the composer falls back to the day's actual last task end. */
+  resetQuickAddCursors: () => void
   setDragPreview: (preview: DragPreview | null) => void
   setWeeklyGoals: (weekStart: DateKey, markdown: string) => void
   setWeeklyGoalsExpanded: (expanded: boolean) => void
@@ -125,6 +131,8 @@ export const usePlannerStore = create<PlannerState>()(
       setQuickAddCursor: (date, cursor) =>
         set((state) => ({ quickAddCursor: { ...state.quickAddCursor, [date]: cursor } })),
 
+      resetQuickAddCursors: () => set({ quickAddCursor: {} }),
+
       setDragPreview: (preview) => set({ dragPreview: preview }),
 
       setWeeklyGoals: (weekStart, markdown) =>
@@ -161,7 +169,6 @@ export const usePlannerStore = create<PlannerState>()(
         theme: state.theme,
         ranges: state.ranges,
         tasks: state.tasks,
-        quickAddCursor: state.quickAddCursor,
         weeklyGoals: state.weeklyGoals,
         weeklyGoalsExpanded: state.weeklyGoalsExpanded,
       }),
