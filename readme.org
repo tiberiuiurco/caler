@@ -106,7 +106,7 @@ src/
 │   └── useDoubleRightClick.ts  Detects two right-clicks within a short window
 ├── components/
 │   ├── Header.tsx          View switcher, week navigation, settings, theme toggle
-│   ├── RangeModal.tsx       First-open prompt for today's active hour range
+│   ├── RangeModal.tsx       Prompt for a day's active hour range, shown the first time its composer is turned on
 │   ├── JumpToDateModal.tsx  "j" prompt: parses "MM/DD" into a full date
 │   ├── QuickAddBar.tsx      Sequential "DURATION TEXT" entry, auto-refocusing (bare DURATION skips)
 │   ├── CalendarGrid.tsx     Shared hour-ruler + column layout (day or week)

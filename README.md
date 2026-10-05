@@ -13,8 +13,11 @@ Single-user, no login, no backend — every plan lives in your browser's
 
 ## How it works
 
-1. On open, if today has no active hour range yet, a centered modal asks for
-   one (e.g. `5-21`), auto-focused so you can just start typing.
+1. Turn on the composer with `i` or the "Add tasks" button. The first time you
+   do this for a day, a centered modal asks for that day's active hour range
+   (e.g. `5-21`), auto-focused so you can just start typing (`Esc` cancels).
+   On open, the composer starts on its own if today already has a range;
+   switching to another day leaves it off until you turn it on.
 2. Once set, a quick-add bar appears at the top, auto-focused. Type entries as
    `DURATION TEXT` (e.g. `1.5 Write report`) and press Enter — it keeps
    re-focusing itself so you can plan the whole day without touching the mouse.
