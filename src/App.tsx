@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Header } from './components/Header'
 import { RangeModal } from './components/RangeModal'
 import { JumpToDateModal } from './components/JumpToDateModal'
+import { MarkerModal } from './components/MarkerModal'
 import { ShortcutsModal } from './components/ShortcutsModal'
 import { SettingsPage } from './components/SettingsPage'
 import { QuickAddBar } from './components/QuickAddBar'
@@ -13,6 +14,7 @@ import { usePlannerStore } from './store/plannerStore'
 import { useTheme } from './hooks/useTheme'
 import { exportPlannerData } from './lib/exportData'
 import { WeeklyGoalsSidebar } from './components/WeeklyGoalsSidebar'
+import { DailyNotes } from './components/DailyNotes'
 import {
   dayColumnLabel,
   daysFromKey,
@@ -26,7 +28,7 @@ import {
   weekKeys,
   weekStartKey,
 } from './lib/date'
-import type { DateKey, Task } from './types'
+import type { DateKey, DayRange, Task } from './types'
 
 function pluralizeEntries(count: number): string {
   return count === 1 ? '1 entry' : `All ${count} entries`
@@ -37,12 +39,16 @@ export default function App() {
 
   const ranges = usePlannerStore((state) => state.ranges)
   const tasks = usePlannerStore((state) => state.tasks)
+  const markers = usePlannerStore((state) => state.markers)
   const quickAddCursor = usePlannerStore((state) => state.quickAddCursor)
   const weeklyGoals = usePlannerStore((state) => state.weeklyGoals)
   const weeklyGoalsExpanded = usePlannerStore((state) => state.weeklyGoalsExpanded)
+  const dailyNotes = usePlannerStore((state) => state.dailyNotes)
+  const setDailyNotes = usePlannerStore((state) => state.setDailyNotes)
   const setRange = usePlannerStore((state) => state.setRange)
   const addTask = usePlannerStore((state) => state.addTask)
   const deleteTask = usePlannerStore((state) => state.deleteTask)
+  const addMarker = usePlannerStore((state) => state.addMarker)
   const clearDay = usePlannerStore((state) => state.clearDay)
   const setQuickAddCursor = usePlannerStore((state) => state.setQuickAddCursor)
   const resetQuickAddCursors = usePlannerStore((state) => state.resetQuickAddCursors)
@@ -59,6 +65,8 @@ export default function App() {
   const [dayLeftDate, setDayLeftDate] = useState<DateKey>(shiftKey(today, -1))
   const [dayRightDate, setDayRightDate] = useState<DateKey>(today)
   const [jumpDateOpen, setJumpDateOpen] = useState(false)
+  const [markerPromptOpen, setMarkerPromptOpen] = useState(false)
+  const [markerPreview, setMarkerPreview] = useState<{ hour: number; label: string } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Which date the quick-add bar is currently filling. Defaults to today; paging/jumping the day
@@ -91,7 +99,7 @@ export default function App() {
   const rangePromptOpen = quickAddActive && !quickAddRange
 
   // Any open dialog/overlay owns the keyboard, so global shortcuts stand down while one is up.
-  const isOverlayOpen = Boolean(confirmDeleteTarget || abandonEntryPending || clearDayTarget || jumpDateOpen || settingsOpen || rangePromptOpen)
+  const isOverlayOpen = Boolean(confirmDeleteTarget || abandonEntryPending || clearDayTarget || jumpDateOpen || markerPromptOpen || settingsOpen || rangePromptOpen)
 
   // Switching the view surface (either way: day<->week, via the header buttons or the q/e
   // shortcuts) always resets quick-add planning back to today, with a clean, empty draft.
@@ -159,7 +167,8 @@ export default function App() {
 
   // Global keyboard flow. Up/Down (and their w/s aliases) loop through tasks; Left/Right (and a/d)
   // page through weeks in week view or single days in day view; q/e switch views; i activates
-  // quick-add planning mode; j jumps the day view to an arbitrary date; x requests task deletion;
+  // quick-add planning mode; j jumps the day view to an arbitrary date; l adds a marker line to the
+  // planning date; x requests task deletion;
   // "." jumps back to the current week (week view) or today (day view).
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -214,6 +223,12 @@ export default function App() {
       if (event.key === 'j' || event.key === 'J') {
         event.preventDefault()
         setJumpDateOpen(true)
+        return
+      }
+      // Prompts for a "TIME [LABEL]" and drops a marker line onto the date being planned.
+      if (event.key === 'l' || event.key === 'L') {
+        event.preventDefault()
+        setMarkerPromptOpen(true)
         return
       }
       if (event.key === ',') {
@@ -276,28 +291,32 @@ export default function App() {
     resetQuickAddCursors()
   }, [quickAddActive, quickAddDate, resetQuickAddCursors])
 
-  // The tracked quick-add cursor only advances when a task is added/skipped through the
-  // composer itself, so it goes stale whenever a task is created some other way (click-drag,
-  // editing, data loaded from storage). Taking the max with the actual last task end time lets
-  // it self-heal in that case while still preserving in-session "skip ahead" behavior.
-  function lastTaskEndFor(date: DateKey) {
-    return (tasks[date] ?? []).reduce((max, task) => Math.max(max, task.start + task.duration), 0)
+  // The tracked quick-add cursor only exists once the composer has added/skipped something in the
+  // current session (it's reset whenever the composer opens or closes). Until then, start from the
+  // actual last task end so tasks created some other way (click-drag, editing, data loaded from
+  // storage) are respected. Once set, it wins outright so in-session skips can move it backwards too.
+  function quickAddCursorFor(date: DateKey, range: DayRange | undefined) {
+    const stored = quickAddCursor[date]
+    if (stored !== undefined) return stored
+    const lastTaskEnd = (tasks[date] ?? []).reduce((max, task) => Math.max(max, task.start + task.duration), 0)
+    return Math.max(range?.start ?? 0, lastTaskEnd)
   }
 
   function handleQuickAddSubmit(duration: number, title: string, isDeepWork: boolean) {
     if (!quickAddRange) return
-    const cursor = Math.max(quickAddCursor[quickAddDate] ?? quickAddRange.start, lastTaskEndFor(quickAddDate))
+    const cursor = quickAddCursorFor(quickAddDate, quickAddRange)
     // A bare duration with no title just skips that stretch of time, no task is created.
+    // A negative one rewinds the cursor, but never before the start of the day's range.
     if (title.trim() !== '') addTask(quickAddDate, cursor, duration, title, isDeepWork)
-    const next = cursor + duration
+    const next = Math.max(quickAddRange.start, cursor + duration)
     setQuickAddCursor(quickAddDate, next)
     setQuickAddValue('')
     if (next >= quickAddRange.end) setQuickAddActive(false)
   }
 
   const dayColumns: CalendarColumnData[] = [
-    { date: dayLeftDate, ...dayColumnLabel(daysFromKey(dayLeftDate, today), dayLeftDate), range: ranges[dayLeftDate], tasks: tasks[dayLeftDate] ?? [], muted: true },
-    { date: dayRightDate, ...dayColumnLabel(daysFromKey(dayRightDate, today), dayRightDate), range: ranges[dayRightDate], tasks: tasks[dayRightDate] ?? [] },
+    { date: dayLeftDate, ...dayColumnLabel(daysFromKey(dayLeftDate, today), dayLeftDate), range: ranges[dayLeftDate], tasks: tasks[dayLeftDate] ?? [], markers: markers[dayLeftDate], muted: true },
+    { date: dayRightDate, ...dayColumnLabel(daysFromKey(dayRightDate, today), dayRightDate), range: ranges[dayRightDate], tasks: tasks[dayRightDate] ?? [], markers: markers[dayRightDate] },
   ]
 
   // Actions offered in the floating toolbar under each day's header. Add new per-day actions here.
@@ -312,11 +331,16 @@ export default function App() {
     },
   ]
 
+  // While the marker prompt is open, show what's being typed on the date it will land on.
+  const withMarkerPreview = (column: CalendarColumnData): CalendarColumnData =>
+    markerPreview && column.date === quickAddDate ? { ...column, markerPreview } : column
+
   const weekColumns: CalendarColumnData[] = weekKeys(weekAnchor).map((date) => ({
     date,
     label: formatWeekdayShort(date),
     range: ranges[date],
     tasks: tasks[date] ?? [],
+    markers: markers[date],
     muted: date !== today,
   }))
 
@@ -328,7 +352,7 @@ export default function App() {
   const goalsWeek = weekKeys(goalsWeekAnchor)
   const goalsWeekLabel = formatWeekRangeLabel(goalsWeek[0], goalsWeek[6])
 
-  const cursor = Math.max(quickAddCursor[quickAddDate] ?? quickAddRange?.start ?? 0, lastTaskEndFor(quickAddDate))
+  const cursor = quickAddCursorFor(quickAddDate, quickAddRange)
   const showContinueButton = !quickAddActive && (!quickAddRange || cursor < quickAddRange.end)
   const quickAddDateLabel = quickAddDate === today ? undefined : formatDayLabel(quickAddDate)
 
@@ -357,6 +381,22 @@ export default function App() {
             setJumpDateOpen(false)
           }}
           onCancel={() => setJumpDateOpen(false)}
+        />
+      )}
+
+      {markerPromptOpen && (
+        <MarkerModal
+          dateLabel={quickAddDateLabel}
+          onConfirm={(hour, label) => {
+            addMarker(quickAddDate, hour, label)
+            setMarkerPromptOpen(false)
+            setMarkerPreview(null)
+          }}
+          onPreviewChange={setMarkerPreview}
+          onCancel={() => {
+            setMarkerPromptOpen(false)
+            setMarkerPreview(null)
+          }}
         />
       )}
 
@@ -419,7 +459,7 @@ export default function App() {
       {settingsOpen && (
         <SettingsPage
           onClose={() => setSettingsOpen(false)}
-          onExport={() => exportPlannerData({ ranges, tasks, weeklyGoals })}
+          onExport={() => exportPlannerData({ ranges, tasks, markers, weeklyGoals, dailyNotes })}
           onImport={(data, mode) => usePlannerStore.getState().importData(data, mode)}
           onEraseAll={() => usePlannerStore.getState().clearAllData()}
         />
@@ -453,7 +493,7 @@ export default function App() {
 
       <div className="flex flex-1 gap-0 overflow-hidden p-5 pt-3">
         <CalendarGrid
-          columns={viewMode === 'day' ? dayColumns : weekColumns}
+          columns={(viewMode === 'day' ? dayColumns : weekColumns).map(withMarkerPreview)}
           selectedTaskId={selected?.id ?? null}
           onSelectTask={(task) => setSelected({ id: task.id, date: task.date })}
           planningDate={viewMode === 'week' ? quickAddDate : null}
@@ -469,6 +509,16 @@ export default function App() {
           onSaveGoals={(markdown) => setWeeklyGoals(goalsWeekStart, markdown)}
           expanded={weeklyGoalsExpanded}
           onExpandedChange={setWeeklyGoalsExpanded}
+          footer={
+            viewMode === 'day' && (
+              <DailyNotes
+                date={dayRightDate}
+                dateLabel={dayRightDate === today ? 'Today' : formatDayLabel(dayRightDate)}
+                notes={dailyNotes[dayRightDate] ?? ''}
+                onSaveNotes={(markdown) => setDailyNotes(dayRightDate, markdown)}
+              />
+            )
+          }
         />
       </div>
     </div>

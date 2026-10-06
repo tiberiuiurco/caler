@@ -22,7 +22,8 @@ Single-user, no login, no backend — every plan lives in your browser's
    `DURATION TEXT` (e.g. `1.5 Write report`) and press Enter — it keeps
    re-focusing itself so you can plan the whole day without touching the mouse.
    Enter just a `DURATION` with no text (e.g. `1`) to skip that stretch of
-   time instead of creating a task. Click away to pause it; a "Continue adding
+   time instead of creating a task, or a negative one (e.g. `-2`) to move the
+   cursor back. Click away to pause it; a "Continue adding
    tasks" button brings it back. Add a standalone `dw` at either end of the text
    (e.g. `1 dw Write report` or `1 Write report dw`) to mark it a **Deep Work**
    session — shown in yellow on the calendar instead of the usual blue.
@@ -32,7 +33,8 @@ Single-user, no login, no backend — every plan lives in your browser's
    (and toggle its **Deep work** status) in the right-hand sidebar. Drag the bottom edge of a task to resize it.
    Click and drag on empty calendar space to create a new task in that slot — the same `dw` syntax
    works here too.
-4. **Double right-click** a task to delete it instantly.
+4. **Double right-click** a task to delete it instantly. **Middle-click** a task to mark it done
+   (it gets hatched out but stays readable); middle-click again to undo.
 5. Toggle **Week** view (Monday-start, with prev/next arrows) from the header,
    or **Day** to return. Click any date's header in Week view to plan it the
    same way as today — it prompts for that day's active hours if it doesn't
@@ -51,6 +53,9 @@ Single-user, no login, no backend — every plan lives in your browser's
    **Cancel**. The week shown follows whatever week you're currently looking at — the week view's
    current week, or the week containing the day view's focused date — and switches automatically
    as you page between weeks/days.
+   In day view, a small **Daily notes** block sits under the goals for the focused (right-hand)
+   day: a single "+ Add note" line when empty, otherwise the day's Markdown notes in a short
+   scrollable box. `Cmd/Ctrl+Enter` saves while editing, `Escape` cancels.
 
 ## Keyboard shortcuts
 
@@ -66,6 +71,8 @@ Single-user, no login, no backend — every plan lives in your browser's
 | `i` | Activate the quick-add bar for whichever date is currently being planned (same as "+Continue"). |
 | `x` | Delete the selected task (asks for confirmation). |
 | Double-right-click a task | Delete it instantly, no confirmation. |
+| Middle-click a task | Toggle it done (hatched out, still readable). |
+| `l` | Add a marker line to the planning day: `TIME [LABEL]`, e.g. `7:30 Lunch` (time as `07:30`, `7:30`, `7` or `7.5`). Right-click a marker to remove it. |
 | `t` | Toggle light/dark theme. |
 | `Escape` | Close the sidebar / cancel a dialog. |
 

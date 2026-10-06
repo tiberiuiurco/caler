@@ -12,6 +12,7 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: 'j', description: 'Jump the day view to an arbitrary date' },
   { keys: ',', description: 'Open settings (import / export / erase data)' },
   { keys: 'i', description: 'Start quick-add planning' },
+  { keys: 'l', description: 'Add a marker line (e.g. "7:30 Lunch") to the planning day' },
   { keys: 'x', description: 'Delete the selected task' },
   { keys: 't', description: 'Toggle light / dark theme' },
   { keys: 'Esc', description: 'Close a dialog or deselect the current task' },
@@ -19,6 +20,8 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
 
 const BEHAVIORS: string[] = [
   'Add "dw" to either end of a task\'s text (quick-add or drag-create) to mark it Deep Work — shown in yellow. Toggle it anytime from the task sidebar.',
+  'Middle-click a task to mark it done — it gets hatched out but stays readable. Middle-click again (or use the sidebar) to undo.',
+  'Right-click a marker line to remove it.',
 ]
 
 /** Full-screen overlay listing all global keyboard shortcuts. Escape or the backdrop closes it. */

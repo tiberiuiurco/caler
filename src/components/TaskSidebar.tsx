@@ -100,6 +100,16 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
         <span className="text-sm font-medium text-amber-900 dark:text-amber-100">Deep work session</span>
       </label>
 
+      <label className="flex items-center gap-2.5 rounded-lg border border-neutral-200 px-3 py-2.5 dark:border-neutral-700">
+        <input
+          type="checkbox"
+          checked={task.isDone ?? false}
+          onChange={(event) => updateTask(task.id, task.date, { isDone: event.target.checked })}
+          className="size-4 rounded"
+        />
+        <span className="text-sm font-medium">Done</span>
+      </label>
+
       <button
         type="button"
         onClick={() => {
@@ -111,7 +121,7 @@ export function TaskSidebar({ task, onClose }: TaskSidebarProps) {
         Delete task
       </button>
       <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-        Tip: double-right-click, or select and press "x", to delete a task.
+        Tip: double-right-click, or select and press "x", to delete a task. Middle-click to mark it done.
       </p>
     </aside>
   )

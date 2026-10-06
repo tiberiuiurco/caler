@@ -23,6 +23,10 @@ interface DragGhost {
   height: number
 }
 
+/** Diagonal stripes drawn over a done task, tinted with the block's own text color. */
+const DONE_HATCH =
+  'repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, currentColor 22%, transparent) 6px 8px)'
+
 /** Ignore tiny mouse jitter on a plain click so it doesn't get mistaken for a drag. */
 const DRAG_THRESHOLD_PX = 4
 
@@ -72,6 +76,13 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
 
   /** Drags the task's body to change its start time (and day, dragging across columns). */
   function handleBodyMouseDown(event: React.MouseEvent) {
+    // Middle button toggles done (see onAuxClick); stop the browser's autoscroll and keep the
+    // column from treating it as the start of a new selection.
+    if (event.button === 1) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
     // Leave right-clicks (and any other non-left button) alone so they reach the native
     // contextmenu event untouched, for double-right-click-to-delete.
     if (event.button !== 0) return
@@ -140,7 +151,8 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
           height: duration * HOUR_HEIGHT,
           left: `calc(${left}% + 4px)`,
           width: `calc(${width}% - 8px)`,
-          opacity: dragGhost ? 0.35 : undefined,
+          opacity: dragGhost ? 0.35 : task.isDone ? 0.6 : undefined,
+          backgroundImage: task.isDone ? DONE_HATCH : undefined,
         }}
         onMouseDown={handleBodyMouseDown}
         onClick={(event) => {
@@ -151,6 +163,12 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
           if (resizingRef.current) return
           event.stopPropagation()
           onSelect(task)
+        }}
+        onAuxClick={(event) => {
+          if (event.button !== 1) return
+          event.preventDefault()
+          event.stopPropagation()
+          updateTask(task.id, task.date, { isDone: !task.isDone })
         }}
         onContextMenu={handleContextMenu}
         className={`group absolute flex flex-col overflow-hidden rounded-lg border px-2 py-1 text-left transition ${
@@ -165,7 +183,9 @@ export function TaskBlock({ task, selected, onSelect, left, width, onMoved }: Ta
               : 'border-sky-200 bg-sky-50 text-sky-900 hover:border-sky-300 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-100'
         }`}
       >
-        <span className="truncate text-xs font-medium">{task.title || 'Untitled task'}</span>
+        <span className={`truncate text-xs font-medium ${task.isDone ? 'line-through' : ''}`}>
+          {task.title || 'Untitled task'}
+        </span>
         {duration * HOUR_HEIGHT > 30 && (
           <span className="truncate text-[11px] opacity-70">
             {formatHour(task.start)} – {formatHour(task.start + duration)}

@@ -17,12 +17,15 @@ GitHub Pages (or any static host).
 - On first open, pick today's active hours (e.g. ~5-21~), then rapid-fire
   entries as ~DURATION TEXT~ (e.g. ~1.5 Write report~) to fill the day without
   touching the mouse. Enter just a ~DURATION~ with no text (e.g. ~1~) to skip
-  that stretch of time instead of creating a task.
+  that stretch of time instead of creating a task, or a negative one (e.g.
+  ~-2~) to move the cursor back.
 - Click a task to select it and edit title, description, start/end time in a
   side panel; drag a task's bottom edge to resize it; click-drag empty
   calendar space to create a new task there.
 - Delete a task by double-right-clicking it, or by selecting it and pressing
   ~x~ (with a confirmation prompt).
+- Middle-click a task to mark it done: it's hatched out and struck through
+  but stays readable. Middle-click again to undo.
 - Week view (Monday-start) with keyboard/arrow navigation between weeks.
   Click any date's header there to plan it just like today: it prompts for
   that day's active hours first if needed, then reuses the same sequential
@@ -81,6 +84,8 @@ publishes ~dist/~ to GitHub Pages on every push to ~main~ (enable Pages →
 | ~i~                       | Activate the quick-add bar for whichever date is currently being planned (same as "+Continue")                                                    |
 | ~x~                       | Delete the selected task (asks for confirmation)                                                                                                  |
 | double-right-click        | Delete a task instantly, no confirmation                                                                                                           |
+| middle-click              | Toggle a task done (hatched out, still readable)                                                                                                   |
+| ~l~                       | Add a marker line to the planning day: ~TIME [LABEL]~, e.g. ~7:30 Lunch~ (time as ~07:30~, ~7:30~, ~7~ or ~7.5~); right-click a marker to remove it |
 | ~t~                       | Toggle light/dark theme                                                                                                                            |
 | ~Escape~                  | Close the sidebar, or cancel whichever dialog is open                                                                                             |
 | ~Enter~                   | Confirm the range/quick-add form, or the focused dialog's default action                                                                          |

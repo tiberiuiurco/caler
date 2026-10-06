@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { DateKey, DayRange, DragPreview, Task, Theme } from '../types'
+import type { DateKey, DayRange, DragPreview, Marker, Task, Theme } from '../types'
 import { LOCAL_STORAGE_KEY, SNAP_HOURS } from '../lib/constants'
 import { createId } from '../lib/id'
 import { mergePlannerData, type ParsedPlannerData } from '../lib/importData'
@@ -9,9 +9,10 @@ export interface PlannerState {
   theme: Theme
   ranges: Record<DateKey, DayRange>
   tasks: Record<DateKey, Task[]>
+  markers: Record<DateKey, Marker[]>
   /**
    * Hour cursor for sequential quick-add, per day. Only meaningful while the composer is open: it
-   * carries in-session "skip ahead" gaps, and is reset whenever the composer closes so it reopens
+   * carries in-session "skip ahead" (or rewind) gaps, and is reset whenever the composer closes so it reopens
    * from the real schedule. Not persisted.
    */
   quickAddCursor: Record<DateKey, number>
@@ -19,16 +20,20 @@ export interface PlannerState {
   dragPreview: DragPreview | null
   /** Markdown weekly goals, keyed by that week's Monday date (see `weekStartKey`). */
   weeklyGoals: Record<DateKey, string>
+  /** Free-form markdown notes per day, shown under the weekly goals in day view. */
+  dailyNotes: Record<DateKey, string>
   /** Whether the weekly goals sidebar is expanded (vs. collapsed to a thin strip). Expanded by default. */
   weeklyGoalsExpanded: boolean
 
   toggleTheme: () => void
   setRange: (date: DateKey, range: DayRange) => void
   addTask: (date: DateKey, start: number, duration: number, title: string, isDeepWork?: boolean) => Task
-  updateTask: (id: string, date: DateKey, patch: Partial<Pick<Task, 'title' | 'description' | 'start' | 'duration' | 'isDeepWork'>>) => void
+  updateTask: (id: string, date: DateKey, patch: Partial<Pick<Task, 'title' | 'description' | 'start' | 'duration' | 'isDeepWork' | 'isDone'>>) => void
   /** Moves a task to `toDate`/`patch.start` (and optionally a new duration), reparenting it between days when `toDate` differs from `fromDate`. */
   moveTask: (id: string, fromDate: DateKey, toDate: DateKey, patch: { start: number; duration?: number }) => void
   deleteTask: (id: string, date: DateKey) => void
+  addMarker: (date: DateKey, hour: number, label: string) => void
+  deleteMarker: (id: string, date: DateKey) => void
   /** Removes every task on `date` and rewinds its quick-add cursor to the start of the day's range. Other days are untouched. */
   clearDay: (date: DateKey) => void
   setQuickAddCursor: (date: DateKey, cursor: number) => void
@@ -37,6 +42,7 @@ export interface PlannerState {
   setDragPreview: (preview: DragPreview | null) => void
   setWeeklyGoals: (weekStart: DateKey, markdown: string) => void
   setWeeklyGoalsExpanded: (expanded: boolean) => void
+  setDailyNotes: (date: DateKey, markdown: string) => void
   importData: (data: ParsedPlannerData, mode: 'replace' | 'merge') => void
   clearAllData: () => void
 }
@@ -51,22 +57,25 @@ export const usePlannerStore = create<PlannerState>()(
       theme: 'dark',
       ranges: {},
       tasks: {},
+      markers: {},
       quickAddCursor: {},
       dragPreview: null,
       weeklyGoals: {},
+      dailyNotes: {},
       weeklyGoalsExpanded: true,
 
       toggleTheme: () =>
         set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
       setRange: (date, range) =>
-        set((state) => ({
-          ranges: { ...state.ranges, [date]: range },
-          quickAddCursor: { ...state.quickAddCursor, [date]: range.start },
-        })),
+        set((state) => {
+          // Drop the cursor so the composer falls back to the new range start / last task end.
+          const { [date]: _cursor, ...quickAddCursor } = state.quickAddCursor
+          return { ranges: { ...state.ranges, [date]: range }, quickAddCursor }
+        }),
 
       addTask: (date, start, duration, title, isDeepWork = false) => {
-        const task: Task = { id: createId(), date, start: snap(start), duration: snap(duration), title, description: '', isDeepWork }
+        const task: Task = { id: createId(), date, start: snap(start), duration: snap(duration), title, description: '', isDeepWork, isDone: false }
         set((state) => ({
           tasks: { ...state.tasks, [date]: [...(state.tasks[date] ?? []), task] },
         }))
@@ -121,6 +130,16 @@ export const usePlannerStore = create<PlannerState>()(
           tasks: { ...state.tasks, [date]: (state.tasks[date] ?? []).filter((task) => task.id !== id) },
         })),
 
+      addMarker: (date, hour, label) =>
+        set((state) => ({
+          markers: { ...state.markers, [date]: [...(state.markers[date] ?? []), { id: createId(), date, hour, label }] },
+        })),
+
+      deleteMarker: (id, date) =>
+        set((state) => ({
+          markers: { ...state.markers, [date]: (state.markers[date] ?? []).filter((marker) => marker.id !== id) },
+        })),
+
       clearDay: (date) =>
         set((state) => {
           const { [date]: _cleared, ...tasks } = state.tasks
@@ -140,11 +159,20 @@ export const usePlannerStore = create<PlannerState>()(
 
       setWeeklyGoalsExpanded: (expanded) => set({ weeklyGoalsExpanded: expanded }),
 
+      setDailyNotes: (date, markdown) =>
+        set((state) => {
+          // Blank notes are dropped rather than stored, so empty days don't pile up in storage/exports.
+          const { [date]: _previous, ...dailyNotes } = state.dailyNotes
+          return { dailyNotes: markdown.trim() === '' ? dailyNotes : { ...dailyNotes, [date]: markdown } }
+        }),
+
       importData: (data, mode) =>
         set((state) => {
           const snapped: ParsedPlannerData = {
             ranges: data.ranges,
             weeklyGoals: data.weeklyGoals,
+            markers: data.markers,
+            dailyNotes: data.dailyNotes,
             tasks: Object.fromEntries(
               Object.entries(data.tasks).map(([date, tasks]) => [
                 date,
@@ -155,13 +183,13 @@ export const usePlannerStore = create<PlannerState>()(
 
           const merged =
             mode === 'merge'
-              ? mergePlannerData({ ranges: state.ranges, tasks: state.tasks, weeklyGoals: state.weeklyGoals }, snapped)
+              ? mergePlannerData({ ranges: state.ranges, tasks: state.tasks, weeklyGoals: state.weeklyGoals, markers: state.markers, dailyNotes: state.dailyNotes }, snapped)
               : snapped
 
-          return { ranges: merged.ranges, tasks: merged.tasks, weeklyGoals: merged.weeklyGoals, quickAddCursor: {} }
+          return { ranges: merged.ranges, tasks: merged.tasks, weeklyGoals: merged.weeklyGoals, markers: merged.markers, dailyNotes: merged.dailyNotes, quickAddCursor: {} }
         }),
 
-      clearAllData: () => set({ ranges: {}, tasks: {}, weeklyGoals: {}, quickAddCursor: {} }),
+      clearAllData: () => set({ ranges: {}, tasks: {}, weeklyGoals: {}, markers: {}, dailyNotes: {}, quickAddCursor: {} }),
     }),
     {
       name: LOCAL_STORAGE_KEY,
@@ -169,7 +197,9 @@ export const usePlannerStore = create<PlannerState>()(
         theme: state.theme,
         ranges: state.ranges,
         tasks: state.tasks,
+        markers: state.markers,
         weeklyGoals: state.weeklyGoals,
+        dailyNotes: state.dailyNotes,
         weeklyGoalsExpanded: state.weeklyGoalsExpanded,
       }),
     },

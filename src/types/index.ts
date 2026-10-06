@@ -12,6 +12,18 @@ export interface Task {
   description: string
   /** Marks this task as a focused Deep Work session, shown with a distinct highlight color. */
   isDeepWork: boolean
+  /** Marks this task as completed; rendered hatched out but still readable. */
+  isDone: boolean
+}
+
+/** A thin labelled line marking a point in time on a day, drawn like the current-time line. */
+export interface Marker {
+  id: string
+  date: DateKey
+  /** Hours from midnight, e.g. 7.5 == 07:30. */
+  hour: number
+  /** Optional name shown inline in the line; empty for a bare line. */
+  label: string
 }
 
 export interface DayRange {

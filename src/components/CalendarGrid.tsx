@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { CalendarColumn } from './CalendarColumn'
 import { HOVER_TOOLBAR_ANCHOR, HoverToolbar } from './HoverToolbar'
 import { HOUR_HEIGHT, TOTAL_HOURS } from '../lib/constants'
-import type { DateKey, DayRange, Task } from '../types'
+import type { DateKey, DayRange, Marker, Task } from '../types'
 
 export interface CalendarColumnData {
   date: DateKey
@@ -10,6 +10,9 @@ export interface CalendarColumnData {
   sublabel?: string
   range?: DayRange
   tasks: Task[]
+  markers?: Marker[]
+  /** Unsaved marker drawn faded while it's being typed into the marker prompt. */
+  markerPreview?: { hour: number; label: string }
   muted?: boolean
 }
 
@@ -101,6 +104,8 @@ export function CalendarGrid({ columns, selectedTaskId, onSelectTask, planningDa
               date={column.date}
               range={column.range}
               tasks={column.tasks}
+              markers={column.markers}
+              markerPreview={column.markerPreview}
               selectedTaskId={selectedTaskId}
               onSelectTask={onSelectTask}
               onTaskMoved={onTaskMoved}

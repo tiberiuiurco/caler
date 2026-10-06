@@ -43,7 +43,7 @@ export function QuickAddBar({
     event.preventDefault()
     const parsed = parseEntry(value)
     if (!parsed) {
-      setError('Use the form "DURATION TEXT", e.g. 1.5 Write report (or just a DURATION to skip)')
+      setError('Use the form "DURATION TEXT", e.g. 1.5 Write report (or just a DURATION to skip, negative to go back)')
       return
     }
     onSubmit(parsed.duration, parsed.title, parsed.isDeepWork)
@@ -73,7 +73,7 @@ export function QuickAddBar({
         onKeyDown={(event) => {
           if (event.key === 'Escape') onDismiss()
         }}
-        placeholder={`Duration + task, e.g. "1 Deep work" (add "dw" at either end for a Deep Work session, duration alone skips) — filling up to ${formatHour(rangeEnd)}`}
+        placeholder={`Duration + task, e.g. "1 Deep work" (add "dw" at either end for a Deep Work session, duration alone skips, e.g. "-2" goes back) — filling up to ${formatHour(rangeEnd)}`}
         className="flex-1 bg-transparent text-sm outline-none placeholder:text-neutral-400"
       />
       {error && <span className="shrink-0 text-xs text-red-500">{error}</span>}

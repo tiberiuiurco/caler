@@ -2,15 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlannerStore } from "../store/plannerStore";
 import { TaskBlock } from "./TaskBlock";
 import { HOUR_HEIGHT, SNAP_HOURS, TOTAL_HOURS } from "../lib/constants";
-import { todayKey } from "../lib/date";
+import { formatHour, todayKey } from "../lib/date";
 import { layoutTasks } from "../lib/layout";
 import { parseEntry } from "../lib/parseEntry";
-import type { DateKey, DayRange, Task } from "../types";
+import type { DateKey, DayRange, Marker, Task } from "../types";
 
 interface CalendarColumnProps {
   date: DateKey;
   range?: DayRange;
   tasks: Task[];
+  markers?: Marker[];
+  markerPreview?: { hour: number; label: string };
   selectedTaskId: string | null;
   onSelectTask: (task: Task) => void;
   onTaskMoved?: (task: Task, newDate: DateKey, newStart: number) => void;
@@ -34,11 +36,14 @@ export function CalendarColumn({
   date,
   range,
   tasks,
+  markers = [],
+  markerPreview,
   selectedTaskId,
   onSelectTask,
   onTaskMoved,
 }: CalendarColumnProps) {
   const addTask = usePlannerStore((state) => state.addTask);
+  const deleteMarker = usePlannerStore((state) => state.deleteMarker);
   const dragPreview = usePlannerStore((state) => state.dragPreview);
   const columnRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -143,6 +148,47 @@ export function CalendarColumn({
         >
           <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
           <div className="h-px flex-1 bg-red-500" />
+        </div>
+      )}
+
+      {markers.map((marker) => (
+        // A slightly taller transparent strip around the 1px line makes it easy to right-click.
+        // Left clicks fall through to the column so drag-creating a task over a marker still works.
+        <div
+          key={marker.id}
+          title={`${formatHour(marker.hour)}${marker.label ? ` ${marker.label}` : ""} (right-click to remove)`}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            deleteMarker(marker.id, marker.date);
+          }}
+          className="absolute inset-x-0 z-20 flex h-2 -translate-y-1/2 items-center text-violet-500 dark:text-violet-400"
+          style={{ top: marker.hour * HOUR_HEIGHT }}
+        >
+          <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+          <div className="h-px flex-1 bg-current" />
+          {marker.label && (
+            <>
+              <span className="max-w-[70%] truncate px-1 text-[10px] font-medium leading-none">
+                {marker.label}
+              </span>
+              <div className="h-px flex-1 bg-current" />
+            </>
+          )}
+        </div>
+      ))}
+
+      {markerPreview && (
+        <div
+          className="pointer-events-none absolute inset-x-0 z-20 flex h-2 -translate-y-1/2 items-center text-violet-500 opacity-60 dark:text-violet-400"
+          style={{ top: markerPreview.hour * HOUR_HEIGHT }}
+        >
+          <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+          <div className="h-px flex-1 border-t border-dashed border-current" />
+          <span className="max-w-[70%] truncate px-1 text-[10px] font-medium leading-none">
+            {markerPreview.label || formatHour(markerPreview.hour)}
+          </span>
+          <div className="h-px flex-1 border-t border-dashed border-current" />
         </div>
       )}
 

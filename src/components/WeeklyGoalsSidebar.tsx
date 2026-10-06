@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { renderMarkdown, toggleMarkdownCheckbox } from '../lib/markdown'
 import type { DateKey } from '../types'
 
@@ -12,6 +12,8 @@ interface WeeklyGoalsSidebarProps {
   onSaveGoals: (markdown: string) => void
   expanded: boolean
   onExpandedChange: (expanded: boolean) => void
+  /** Secondary content pinned below the goals (e.g. the day's notes in day view). */
+  footer?: ReactNode
 }
 
 function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
@@ -27,7 +29,7 @@ function ChevronIcon({ direction }: { direction: 'left' | 'right' }) {
  * thin strip like a browser's vertical tab bar. Shows the markdown rendered by default with an
  * "Edit" button when non-empty; editing swaps in a textarea with "Cancel"/"Save".
  */
-export function WeeklyGoalsSidebar({ weekStart, weekLabel, goals, onSaveGoals, expanded, onExpandedChange }: WeeklyGoalsSidebarProps) {
+export function WeeklyGoalsSidebar({ weekStart, weekLabel, goals, onSaveGoals, expanded, onExpandedChange, footer }: WeeklyGoalsSidebarProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(goals)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -162,6 +164,8 @@ export function WeeklyGoalsSidebar({ weekStart, weekLabel, goals, onSaveGoals, e
           </button>
         </div>
       )}
+
+      {footer}
     </aside>
   )
 }
